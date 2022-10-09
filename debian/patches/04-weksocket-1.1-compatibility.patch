@@ -1,0 +1,24 @@
+Description: Fix the compatibility with the websocket api 1.1
+Author: Emmanuel Bourg <ebourg@apache.org>
+Forwarded: no
+--- a/jetty-websocket/javax-websocket-client-impl/src/main/java/org/eclipse/jetty/websocket/jsr356/JsrSession.java
++++ b/jetty-websocket/javax-websocket-client-impl/src/main/java/org/eclipse/jetty/websocket/jsr356/JsrSession.java
+@@ -145,6 +145,18 @@
+     }
+ 
+     @Override
++    public <T> void addMessageHandler(Class<T> clazz, MessageHandler.Partial<T> handler) throws IllegalStateException
++    {
++        throw new UnsupportedOperationException();
++    }
++
++    @Override
++    public <T> void addMessageHandler(Class<T> clazz, MessageHandler.Whole<T> handler) throws IllegalStateException
++    {
++        throw new UnsupportedOperationException();
++    }
++
++    @Override
+     public void close(CloseReason closeReason) throws IOException
+     {
+         close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase());

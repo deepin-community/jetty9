@@ -1,0 +1,14 @@
+Description: Don't unpack the test files from jetty-test-policy when building jetty-client
+Author: Emmanuel Bourg <ebourg@apache.org>
+Forwarded: not-needed
+--- a/jetty-client/pom.xml
++++ b/jetty-client/pom.xml
+@@ -21,7 +21,7 @@
+         <executions>
+           <execution>
+             <id>unpack</id>
+-            <phase>generate-test-resources</phase>
++            <phase>none</phase>
+             <goals>
+               <goal>unpack</goal>
+             </goals>

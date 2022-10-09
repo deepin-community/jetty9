@@ -1,0 +1,49 @@
+Description: Modified the assembly plugin configuration to use debian/assembly-config.xml
+ instead of the 'config' descriptor from the (missing) jetty-assembly-descriptors artifact
+Author: Emmanuel Bourg <ebourg@apache.org>
+Forwarded: not-needed
+--- a/pom.xml
++++ b/pom.xml
+@@ -1285,9 +1285,9 @@
+                   <goal>single</goal>
+                 </goals>
+                 <configuration>
+-                  <descriptorRefs>
+-                    <descriptorRef>config</descriptorRef>
+-                  </descriptorRefs>
++                  <descriptors>
++                    <descriptor>debian/assembly-config.xml</descriptor>
++                  </descriptors>
+                 </configuration>
+               </execution>
+             </executions>
+--- a/jetty-websocket/javax-websocket-server-impl/pom.xml
++++ b/jetty-websocket/javax-websocket-server-impl/pom.xml
+@@ -80,9 +80,9 @@
+               <goal>single</goal>
+             </goals>
+             <configuration>
+-              <descriptorRefs>
+-                <descriptorRef>config</descriptorRef>
+-              </descriptorRefs>
++              <descriptors>
++                <descriptor>../../debian/assembly-config.xml</descriptor>
++              </descriptors>
+             </configuration>
+           </execution>
+         </executions>
+--- a/jetty-cdi/pom.xml
++++ b/jetty-cdi/pom.xml
+@@ -60,9 +60,9 @@
+               <goal>single</goal>
+             </goals>
+             <configuration>
+-              <descriptorRefs>
+-                <descriptorRef>config</descriptorRef>
+-              </descriptorRefs>
++              <descriptors>
++                <descriptor>../debian/assembly-config.xml</descriptor>
++              </descriptors>
+             </configuration>
+           </execution>
+         </executions>

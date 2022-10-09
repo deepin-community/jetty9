@@ -1,0 +1,13 @@
+Description: Ignore the documentation module (removed from the upstream tarball to save some space)
+Author: Emmanuel Bourg <ebourg@apache.org>
+Forwarded: not-needed
+--- a/pom.xml
++++ b/pom.xml
+@@ -201,7 +201,6 @@
+     <module>jetty-alpn</module>
+     <module>jetty-home</module>
+     <module>jetty-bom</module>
+-    <module>jetty-documentation</module>
+   </modules>
+ 
+   <build>

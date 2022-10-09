@@ -1,0 +1,127 @@
+Description: Remove optional content from the distribution (documentation, sources, test files, examples)
+Author: Emmanuel Bourg <ebourg@apache.org>
+Forwarded: not-needed
+--- a/jetty-home/pom.xml
++++ b/jetty-home/pom.xml
+@@ -80,16 +80,6 @@
+               <artifactItems>
+                 <artifactItem>
+                   <groupId>org.eclipse.jetty</groupId>
+-                  <artifactId>jetty-project</artifactId>
+-                  <version>${project.version}</version>
+-                  <classifier>version</classifier>
+-                  <type>txt</type>
+-                  <overWrite>true</overWrite>
+-                  <outputDirectory>${assembly-directory}/</outputDirectory>
+-                  <destFileName>VERSION.txt</destFileName>
+-                </artifactItem>
+-                <artifactItem>
+-                  <groupId>org.eclipse.jetty</groupId>
+                   <artifactId>jetty-start</artifactId>
+                   <version>${project.version}</version>
+                   <classifier>shaded</classifier>
+@@ -104,7 +94,7 @@
+           </execution>
+           <execution>
+             <id>copy-setuid-deps</id>
+-            <phase>generate-resources</phase>
++            <phase>none</phase>
+             <goals>
+               <goal>copy</goal>
+             </goals>
+@@ -294,11 +284,12 @@
+                 <artifactItem>
+                   <groupId>javax.servlet</groupId>
+                   <artifactId>javax.servlet-api</artifactId>
+-                  <version>3.1.0</version>
++                  <version>3.1</version>
+                   <overWrite>true</overWrite>
+                   <outputDirectory>${assembly-directory}/lib</outputDirectory>
+                   <destFileName>servlet-api-3.1.jar</destFileName>
+                 </artifactItem>
++<!--
+                 <artifactItem>
+                   <groupId>org.eclipse.jetty.toolchain</groupId>
+                   <artifactId>jetty-schemas</artifactId>
+@@ -307,6 +298,7 @@
+                   <outputDirectory>${assembly-directory}/lib</outputDirectory>
+                   <destFileName>jetty-schemas-3.1.jar</destFileName>
+                 </artifactItem>
++-->
+               </artifactItems>
+             </configuration>
+           </execution>
+@@ -456,7 +448,7 @@
+           </execution>
+           <execution>
+             <id>unpack-infinispan-config</id>
+-            <phase>generate-resources</phase>
++            <phase>none</phase>
+             <goals>
+               <goal>unpack</goal>
+             </goals>
+@@ -524,7 +516,7 @@
+           </execution>
+           <execution>
+             <id>sources</id>
+-            <phase>package</phase>
++            <phase>none</phase>
+             <goals>
+               <goal>single</goal>
+             </goals>
+--- a/jetty-distribution/pom.xml
++++ b/jetty-distribution/pom.xml
+@@ -75,7 +75,7 @@
+           </execution>
+           <execution>
+             <id>copy</id>
+-            <phase>prepare-package</phase>
++            <phase>none</phase>
+             <goals>
+               <goal>copy</goal>
+             </goals>
+@@ -147,7 +147,7 @@
+ 
+           <execution>
+             <id>unpack-test-webapp-config</id>
+-            <phase>prepare-package</phase>
++            <phase>none</phase>
+             <goals>
+               <goal>unpack</goal>
+             </goals>
+@@ -169,7 +169,7 @@
+ 
+           <execution>
+             <id>unpack-test-jaas-config</id>
+-            <phase>prepare-package</phase>
++            <phase>none</phase>
+             <goals>
+               <goal>unpack</goal>
+             </goals>
+@@ -191,7 +191,7 @@
+ 
+           <execution>
+             <id>unpack-test-jndi-config</id>
+-            <phase>prepare-package</phase>
++            <phase>none</phase>
+             <goals>
+               <goal>unpack</goal>
+             </goals>
+@@ -213,7 +213,7 @@
+ 
+           <execution>
+             <id>unpack-test-spec-config</id>
+-            <phase>prepare-package</phase>
++            <phase>none</phase>
+             <goals>
+               <goal>unpack</goal>
+             </goals>
+@@ -234,7 +234,7 @@
+           </execution>
+           <execution>
+             <id>unpack-documentation</id>
+-            <phase>prepare-package</phase>
++            <phase>none</phase>
+             <goals>
+               <goal>unpack</goal>
+             </goals>
