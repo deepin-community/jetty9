@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -143,13 +143,13 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         }
         catch (BadMessageException x)
         {
-            onBadMessage(x);
-            return null;
+            if (LOG.isDebugEnabled())
+                LOG.debug("onRequest", x);
+            return () -> onBadMessage(x);
         }
         catch (Throwable x)
         {
-            onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
-            return null;
+            return () -> onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
         }
     }
 
@@ -175,13 +175,11 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
         }
         catch (BadMessageException x)
         {
-            onBadMessage(x);
-            return null;
+            return () -> onBadMessage(x);
         }
         catch (Throwable x)
         {
-            onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
-            return null;
+            return () -> onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
         }
     }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
+import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 
 public class PushPromiseBodyParser extends BodyParser
@@ -70,13 +71,9 @@ public class PushPromiseBodyParser extends BodyParser
                     length = getBodyLength();
 
                     if (isPadding())
-                    {
                         state = State.PADDING_LENGTH;
-                    }
                     else
-                    {
                         state = State.STREAM_ID;
-                    }
                     break;
                 }
                 case PADDING_LENGTH:
@@ -124,6 +121,10 @@ public class PushPromiseBodyParser extends BodyParser
                 }
                 case HEADERS:
                 {
+                    int maxLength = headerBlockParser.getMaxHeaderListSize();
+                    if (maxLength > 0 && length > maxLength)
+                        return connectionFailure(buffer, ErrorCode.REFUSED_STREAM_ERROR.code, "invalid_headers_frame");
+
                     MetaData metaData = headerBlockParser.parse(buffer, length);
                     if (metaData == HeaderBlockParser.SESSION_FAILURE)
                         return false;
@@ -132,7 +133,15 @@ public class PushPromiseBodyParser extends BodyParser
                         state = State.PADDING;
                         loop = paddingLength == 0;
                         if (metaData != HeaderBlockParser.STREAM_FAILURE)
+                        {
                             onPushPromise(streamId, metaData);
+                        }
+                        else
+                        {
+                            HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, null, isEndStream());
+                            if (!rateControlOnEvent(frame))
+                                return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_headers_frame_rate");
+                        }
                     }
                     break;
                 }

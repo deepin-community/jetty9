@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,6 +32,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(disabledWithoutDocker = true)
 public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
+
+    public GCloudSessionDataStoreTest() throws Exception
+    {
+        super();
+    }
 
     public static GCloudSessionTestSupport __testSupport;
 

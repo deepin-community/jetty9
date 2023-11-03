@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
-  <version>9.4.44.v20210927</version>
+  <version>9.4.53.v20231009</version>
   <name>Jetty :: Project</name>
   <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
@@ -15,6 +15,7 @@
     <!-- build -->
     <maven.compiler.source>8</maven.compiler.source>
     <maven.compiler.target>8</maven.compiler.target>
+    <maven.compiler.createMissingPackageInfoClass>false</maven.compiler.createMissingPackageInfoClass>
     <jetty.url>https://eclipse.org/jetty</jetty.url>
     <jmhjar.name>benchmarks</jmhjar.name>
     <jpms-module-name>${bundle-symbolic-name}</jpms-module-name>
@@ -24,23 +25,32 @@
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <alpn.api.version>1.1.3.v20160715</alpn.api.version>
-    <ant.version>1.10.11</ant.version>
-    <asm.version>9.2</asm.version>
-    <bndlib.version>5.3.0</bndlib.version>
+    <ant.version>1.10.14</ant.version>
+    <apache.avro.version>1.11.3</apache.avro.version>
+    <mina.core.version>2.2.3</mina.core.version>
+    <asm.version>9.6</asm.version>
+    <bndlib.version>6.3.1</bndlib.version>
     <build-support.version>1.5</build-support.version>
-    <checkstyle.version>9.0</checkstyle.version>
+    <checkstyle.version>9.3</checkstyle.version>
+    <commons-codec.version>1.16.0</commons-codec.version>
+    <commons.compress.version>1.24.0</commons.compress.version>
+    <commons.io.version>2.14.0</commons.io.version>
+    <commons.lang3.version>3.13.0</commons.lang3.version>
     <conscrypt.version>2.5.2</conscrypt.version>
-    <disruptor.version>3.4.2</disruptor.version>
+    <disruptor.version>3.4.4</disruptor.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
-    <google.errorprone.version>2.9.0</google.errorprone.version>
-    <grpc.version>1.41.0</grpc.version>
-    <gson.version>2.8.8</gson.version>
-    <guava.version>30.1.1-jre</guava.version>
-    <guice.version>5.0.1</guice.version>
-    <hawtio.version>2.14.0</hawtio.version>
+    <google.errorprone.version>2.14.0</google.errorprone.version>
+    <grpc.version>1.47.0</grpc.version>
+    <gson.version>2.9.0</gson.version>
+    <guava.version>31.1-jre</guava.version>
+    <guice.version>5.1.0</guice.version>
+    <hawtio.version>2.15.0</hawtio.version>
     <hazelcast.version>3.12.12</hazelcast.version>
-    <infinispan.version>9.4.8.Final</infinispan.version>
-    <infinispan.protostream.version>4.3.4.Final</infinispan.protostream.version>
+    <infinispan.protostream.version>4.4.4.Final</infinispan.protostream.version>
+    <infinispan.version>11.0.17.Final</infinispan.version>
+    <jackson.annotations.version>2.14.2</jackson.annotations.version>
+    <jackson.core.version>2.14.2</jackson.core.version>
+    <jackson.databind.version>2.14.2</jackson.databind.version>
     <jamon.version>2.82</jamon.version>
     <javax.activation.version>1.1.0.v201105071233</javax.activation.version>
     <javax.annotation.api.version>1.3.2</javax.annotation.api.version>
@@ -49,87 +59,98 @@
     <javax.servlet.api.version>3.1.0</javax.servlet.api.version>
     <javax.transaction.api.version>1.3</javax.transaction.api.version>
     <javax.websocket.api.version>1.0</javax.websocket.api.version>
-    <jboss.logging.version>3.4.2.Final</jboss.logging.version>
+    <jboss.logging.version>3.4.3.Final</jboss.logging.version>
+    <jboss.threads.version>3.5.1.Final</jboss.threads.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <jetty.schemas.version>3.1.2</jetty.schemas.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
-    <jmh.version>1.33</jmh.version>
-    <jna.version>5.9.0</jna.version>
-    <jnr-enxio.version>0.32.9</jnr-enxio.version>
-    <jnr-ffi.version>2.2.7</jnr-ffi.version>
-    <jnr-posix.version>3.1.10</jnr-posix.version>
-    <jnr-unixsocket.version>0.38.11</jnr-unixsocket.version>
-    <jolokia.version>1.3.3</jolokia.version>
+    <jmh.version>1.37</jmh.version>
+    <jna.version>5.12.1</jna.version>
+    <jnr-constants.version>0.10.4</jnr-constants.version>
+    <jnr-enxio.version>0.32.13</jnr-enxio.version>
+    <jnr-ffi.version>2.2.12</jnr-ffi.version>
+    <jnr-posix.version>3.1.15</jnr-posix.version>
+    <jnr-unixsocket.version>0.38.17</jnr-unixsocket.version>
+    <jolokia.version>1.7.1</jolokia.version>
     <jsp.version>8.5.70</jsp.version>
-    <junit.version>5.8.1</junit.version>
-    <log4j2.version>2.14.0</log4j2.version>
-    <logback.version>1.2.6</logback.version>
-    <maven.version>3.8.2</maven.version>
-    <maven.plugin-tools.version>3.6.1</maven.plugin-tools.version>
-    <maven.resolver.version>1.7.2</maven.resolver.version>
-    <mongodb.version>2.13.2</mongodb.version>
-    <osgi.annotation.version>8.0.0</osgi.annotation.version>
+    <junit.version>5.9.1</junit.version>
+    <log4j2.version>2.17.1</log4j2.version>
+    <logback.version>1.2.12</logback.version>
+    <maven.plugin-tools.version>3.8.2</maven.plugin-tools.version>
+    <maven.resolver.version>1.9.16</maven.resolver.version>
+    <maven.version>3.9.0</maven.version>
+    <mongodb.version>2.14.3</mongodb.version>
+    <osgi.annotation.version>8.1.0</osgi.annotation.version>
     <osgi.core.version>6.0.0</osgi.core.version>
-    <plexus-container.version>2.1.0</plexus-container.version>
-    <plexus-utils.version>3.4.1</plexus-utils.version>
-    <slf4j.version>1.7.32</slf4j.version>
+    <osgi.util.function.version>1.2.0</osgi.util.function.version>
+    <osgi.util.promise.version>1.2.0</osgi.util.promise.version>
+    <plexus-container.version>2.1.1</plexus-container.version>
+    <plexus-utils.version>4.0.0</plexus-utils.version>
+    <plexus-xml.version>4.0.2</plexus-xml.version>
+    <slf4j.version>1.7.36</slf4j.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
-    <weld.version>3.1.5.Final</weld.version>
+    <testcontainers.version>1.19.0</testcontainers.version>
+    <weld.version>3.1.9.Final</weld.version>
+    <wildfly.elytron.version>2.2.2.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.7</xmemcached.version>
 
     <!-- some maven plugins versions -->
-    <asciidoctor.plugin.version>2.2.1</asciidoctor.plugin.version>
+    <asciidoctor.plugin.version>2.2.4</asciidoctor.plugin.version>
     <appassembler.plugin.version>2.1.0</appassembler.plugin.version>
-    <build-helper.plugin.version>3.2.0</build-helper.plugin.version>
-    <buildnumber.plugin.version>1.4</buildnumber.plugin.version>
+    <build-helper.plugin.version>3.3.0</build-helper.plugin.version>
+    <buildnumber.plugin.version>3.0.0</buildnumber.plugin.version>
     <docbkx.plugin.version>2.0.17</docbkx.plugin.version>
     <exec.plugin.version>3.0.0</exec.plugin.version>
     <felix-bundle.plugin.version>3.5.1</felix-bundle.plugin.version>
-    <h2spec.plugin.version>1.0.7</h2spec.plugin.version>
-    <jacoco.plugin.version>0.8.7</jacoco.plugin.version>
+    <h2spec.plugin.version>1.0.9</h2spec.plugin.version>
+    <jacoco.plugin.version>0.8.8</jacoco.plugin.version>
     <jetty-version-txt.plugin.version>2.7</jetty-version-txt.plugin.version>
     <license.plugin.version>4.1</license.plugin.version>
-    <maven.antrun.plugin.version>3.0.0</maven.antrun.plugin.version>
-    <maven.assembly.plugin.version>3.3.0</maven.assembly.plugin.version>
-    <maven.invoker.plugin.version>3.2.2</maven.invoker.plugin.version>
-    <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
-    <maven.checkstyle.plugin.version>3.1.0</maven.checkstyle.plugin.version>
-    <maven.clean.plugin.version>3.1.0</maven.clean.plugin.version>
-    <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
-    <maven.dependency.plugin.version>3.2.0</maven.dependency.plugin.version>
+    <maven.antrun.plugin.version>3.1.0</maven.antrun.plugin.version>
+    <maven.assembly.plugin.version>3.6.0</maven.assembly.plugin.version>
+    <maven.invoker.plugin.version>3.6.0</maven.invoker.plugin.version>
+    <maven.surefire.plugin.version>3.1.2</maven.surefire.plugin.version>
+    <maven.checkstyle.plugin.version>3.3.0</maven.checkstyle.plugin.version>
+    <maven.clean.plugin.version>3.3.1</maven.clean.plugin.version>
+    <maven.compiler.plugin.version>3.11.0</maven.compiler.plugin.version>
+    <maven.dependency.plugin.version>3.6.0</maven.dependency.plugin.version>
     <maven.eclipse.plugin.version>2.10</maven.eclipse.plugin.version>
-    <maven.enforcer.plugin.version>3.0.0</maven.enforcer.plugin.version>
-    <maven.jar.plugin.version>3.2.0</maven.jar.plugin.version>
+    <maven.enforcer.plugin.version>3.4.1</maven.enforcer.plugin.version>
+    <maven.jar.plugin.version>3.3.0</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.3.1</maven.javadoc.plugin.version>
     <maven.jxr.plugin.version>3.3.1</maven.jxr.plugin.version>
-    <maven.plugin.plugin.version>3.6.1</maven.plugin.plugin.version>
-    <maven.project-info-reports.plugin.version>3.1.2</maven.project-info-reports.plugin.version>
-    <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
-    <maven.remote-resources.plugin.version>1.7.0</maven.remote-resources.plugin.version>
-    <maven.resources.plugin.version>3.2.0</maven.resources.plugin.version>
-    <maven.shade.plugin.version>3.2.4</maven.shade.plugin.version>
-    <maven.site.plugin.version>3.9.1</maven.site.plugin.version>
-    <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
-    <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
-    <maven.install.plugin.version>3.0.0-M1</maven.install.plugin.version>
-    <maven.deploy.plugin.version>3.0.0-M1</maven.deploy.plugin.version>
-    <servicemix-depends.plugin.version>1.4.0</servicemix-depends.plugin.version>
-    <versions.plugin.version>2.8.1</versions.plugin.version>
+    <maven.plugin.plugin.version>3.9.0</maven.plugin.plugin.version>
+    <maven.release.plugin.version>3.0.1</maven.release.plugin.version>
+    <maven.remote-resources.plugin.version>3.1.0</maven.remote-resources.plugin.version>
+    <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
+    <maven.shade.plugin.version>3.5.1</maven.shade.plugin.version>
+    <maven.site.plugin.version>3.12.1</maven.site.plugin.version>
+    <maven.source.plugin.version>3.3.0</maven.source.plugin.version>
+    <maven.war.plugin.version>3.4.0</maven.war.plugin.version>
+    <maven.install.plugin.version>3.1.1</maven.install.plugin.version>
+    <maven.deploy.plugin.version>3.1.1</maven.deploy.plugin.version>
+    <servicemix-depends.plugin.version>1.5.0</servicemix-depends.plugin.version>
+    <versions.plugin.version>2.11.0</versions.plugin.version>
 
     <!-- testing -->
-    <awaitility.version>4.1.0</awaitility.version>
+    <awaitility.version>4.2.0</awaitility.version>
     <it.debug>false</it.debug>
     <jetty.test.version>5.9</jetty.test.version>
     <jetty.testtracker.log>false</jetty.testtracker.log>
+
     <jsr250-api.version>1.0</jsr250-api.version>
     <localRepoPath>${project.build.directory}/local-repo</localRepoPath>
-    <maria.version>2.7.4</maria.version>
+    <maria.version>3.0.6</maria.version>
+    <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
+    <!-- if changing this version please update default in MongoTestHelper you will get thanks from Eclipse IDE users -->
+    <mongo.docker.version>3.2.20</mongo.docker.version>
     <settingsPath>src/it/settings.xml</settingsPath>
     <spring-boot.version>2.1.1.RELEASE</spring-boot.version>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
-    <testcontainers.version>1.16.0</testcontainers.version>
+    <testcontainers.version>1.16.1</testcontainers.version>
     <unix.socket.tmp></unix.socket.tmp>
+
   </properties>
 
   <licenses>
@@ -367,7 +388,7 @@
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
           <properties>
-            <copyright-range>${project.inceptionYear}-2021</copyright-range>
+            <copyright-range>${project.inceptionYear}-2022</copyright-range>
           </properties>
         </configuration>
         <executions>
@@ -455,7 +476,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>3.1.2</version>
+        <version>3.3.0</version>
         <configuration>
           <configLocation>jetty-checkstyle.xml</configLocation>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
@@ -644,11 +665,6 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-project-info-reports-plugin</artifactId>
-          <version>${maven.project-info-reports.plugin.version}</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-release-plugin</artifactId>
           <version>${maven.release.plugin.version}</version>
         </plugin>
@@ -669,6 +685,9 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
           <version>${maven.shade.plugin.version}</version>
+          <configuration>
+            <createDependencyReducedPom>false</createDependencyReducedPom>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -758,7 +777,7 @@
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
-              <Bundle-Copyright>Copyright (c) 2008-2021 Mort Bay Consulting Pty Ltd and others.</Bundle-Copyright>
+              <Bundle-Copyright>Copyright (c) 2008-2022 Mort Bay Consulting Pty Ltd and others.</Bundle-Copyright>
               <_provider-policy><![CDATA[$<range;[===,=+)>]]></_provider-policy>
               <_consumer-policy><![CDATA[$<range;[===,+)>]]></_consumer-policy>
             </instructions>
@@ -919,16 +938,36 @@
         <version>${javax.transaction.api.version}</version>
         <scope>provided</scope>
       </dependency>
+      <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>${commons-codec.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>${commons.io.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>${commons.lang3.version}</version>
+      </dependency>
       <!-- maven deps -->
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-component-annotations</artifactId>
-        <version>2.1.0</version>
+        <version>2.1.1</version>
       </dependency>
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-utils</artifactId>
         <version>${plexus-utils.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.codehaus.plexus</groupId>
+        <artifactId>plexus-xml</artifactId>
+        <version>${plexus-xml.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.maven</groupId>
@@ -987,18 +1026,41 @@
       <!-- Test Container Deps -->
       <dependency>
         <groupId>org.testcontainers</groupId>
-        <artifactId>testcontainers</artifactId>
+        <artifactId>testcontainers-bom</artifactId>
         <version>${testcontainers.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>junit-jupiter</artifactId>
-        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna</artifactId>
         <version>${jna.version}</version>
+      </dependency>
+      <!-- jboss deps.. -->
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging</artifactId>
+        <version>${jboss.logging.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging-processor</artifactId>
+        <version>${jboss.logging.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging-annotations</artifactId>
+        <version>${jboss.logging.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.logmanager</groupId>
+        <artifactId>jboss-logmanager</artifactId>
+        <version>${jboss.logging.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.threads</groupId>
+        <artifactId>jboss-threads</artifactId>
+        <version>${jboss.threads.version}</version>
       </dependency>
       <!-- Old Deps -->
       <dependency>
@@ -1027,14 +1089,61 @@
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.infinispan</groupId>
+        <artifactId>infinispan-bom</artifactId>
+        <version>${infinispan.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.infinispan.protostream</groupId>
+        <artifactId>protostream</artifactId>
+        <version>${infinispan.protostream.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.avro</groupId>
+        <artifactId>avro</artifactId>
+        <version>${apache.avro.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>${commons.compress.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.mina</groupId>
+        <artifactId>mina-core</artifactId>
+        <version>${mina.core.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-core</artifactId>
+        <version>${jackson.core.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${jackson.databind.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-annotations</artifactId>
+        <version>${jackson.annotations.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.wildfly.security</groupId>
+        <artifactId>wildfly-elytron</artifactId>
+        <version>${wildfly.elytron.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-simple</artifactId>
         <version>${slf4j.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.jboss.logging</groupId>
-        <artifactId>jboss-logging</artifactId>
-        <version>${jboss.logging.version}</version>
+        <groupId>com.github.jnr</groupId>
+        <artifactId>jnr-constants</artifactId>
+        <version>${jnr-constants.version}</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
@@ -1058,13 +1167,30 @@
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
+        <!-- older artifact location, some of our transitive deps still use this coordinate -->
         <artifactId>org.osgi.core</artifactId>
+        <version>${osgi.core.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <!-- newer artifact location, some of our transitive deps use this up to date coordinate -->
+        <artifactId>osgi.core</artifactId>
         <version>${osgi.core.version}</version>
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
         <artifactId>osgi.annotation</artifactId>
         <version>${osgi.annotation.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.function</artifactId>
+        <version>${osgi.util.function.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.util.promise</artifactId>
+        <version>${osgi.util.promise.version}</version>
       </dependency>
       <dependency>
         <groupId>biz.aQute.bnd</groupId>
@@ -1172,47 +1298,6 @@
             </plugin>
           </plugins>
         </pluginManagement>
-      </build>
-    </profile>
-    <profile>
-      <id>checkstyle</id>
-      <reporting>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-project-info-reports-plugin</artifactId>
-            <version>3.1.2</version>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-checkstyle-plugin</artifactId>
-            <reportSets>
-              <reportSet>
-                <reports>
-                  <report>checkstyle</report>
-                </reports>
-              </reportSet>
-            </reportSets>
-          </plugin>
-        </plugins>
-      </reporting>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-site-plugin</artifactId>
-            <version>3.9.1</version>
-            <executions>
-              <execution>
-                <id>build-site</id>
-                <goals>
-                  <goal>site</goal>
-                </goals>
-                <phase>package</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
       </build>
     </profile>
     <profile>
@@ -1403,7 +1488,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
-            <version>3.0.1</version>
+            <version>3.1.0</version>
             <executions>
               <execution>
                 <id>sign-artifacts</id>
@@ -1439,14 +1524,17 @@
             <plugin>
               <groupId>com.github.spotbugs</groupId>
               <artifactId>spotbugs-maven-plugin</artifactId>
-              <version>4.4.1</version>
+              <version>4.7.0.0</version>
             </plugin>
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-surefire-plugin</artifactId>
               <version>${maven.surefire.plugin.version}</version>
               <configuration>
-                <excludedGroups>external, large-disk-resource</excludedGroups>
+                <excludedGroups>external, large-disk-resource, stress, slow</excludedGroups>
+                <systemPropertyVariables>
+                  <jetty.testtracker.log>true</jetty.testtracker.log>
+                </systemPropertyVariables>
               </configuration>
             </plugin>
           </plugins>
@@ -1531,7 +1619,7 @@
         </property>
       </activation>
       <properties>
-        <cbi-plugins.version>1.3.2</cbi-plugins.version>
+        <cbi-plugins.version>1.4.2</cbi-plugins.version>
       </properties>
       <build>
         <plugins>

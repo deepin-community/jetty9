@@ -4,23 +4,16 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>9.4.44.v20210927</version>
+    <version>9.4.53.v20231009</version>
   </parent>
   <artifactId>test-hazelcast-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Hazelcast</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.hazelcast</bundle-symbolic-name>
+    <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- DO NOT DEPLOY (or Release) -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>

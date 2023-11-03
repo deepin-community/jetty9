@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,11 +37,6 @@ public class StopLifeCycle extends AbstractLifeCycle implements LifeCycle.Listen
     }
 
     @Override
-    public void lifeCycleStarting(LifeCycle lifecycle)
-    {
-    }
-
-    @Override
     public void lifeCycleStarted(LifeCycle lifecycle)
     {
         try
@@ -52,20 +47,5 @@ public class StopLifeCycle extends AbstractLifeCycle implements LifeCycle.Listen
         {
             LOG.warn(e);
         }
-    }
-
-    @Override
-    public void lifeCycleFailure(LifeCycle lifecycle, Throwable cause)
-    {
-    }
-
-    @Override
-    public void lifeCycleStopping(LifeCycle lifecycle)
-    {
-    }
-
-    @Override
-    public void lifeCycleStopped(LifeCycle lifecycle)
-    {
     }
 }

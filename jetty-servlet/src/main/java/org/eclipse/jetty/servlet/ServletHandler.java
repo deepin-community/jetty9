@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -50,6 +50,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.MatchedPath;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
@@ -303,7 +305,7 @@ public class ServletHandler extends ScopedHandler
                     }
                 }
                 else
-                    servletHolders.add(_servlets[i]); //only retain embedded 
+                    servletHolders.add(_servlets[i]); //only retain embedded
             }
         }
 
@@ -314,7 +316,7 @@ public class ServletHandler extends ScopedHandler
         ServletMapping[] sms = servletMappings.toArray(new ServletMapping[0]);
         updateBeans(_servletMappings, sms);
         _servletMappings = sms;
-        
+
         if (_contextHandler != null)
             _contextHandler.contextDestroyed();
 
@@ -369,13 +371,16 @@ public class ServletHandler extends ScopedHandler
      *
      * @param target Path within _context or servlet name
      * @return PathMap Entries pathspec to ServletHolder
-     * @deprecated Use {@link #getMappedServlet(String)}
+     * @deprecated Use {@link #getMatchedServlet(String)} instead
      */
     @Deprecated
     public MappedResource<ServletHolder> getHolderEntry(String target)
     {
         if (target.startsWith("/"))
-            return getMappedServlet(target);
+        {
+            MatchedResource<ServletHolder> matchedResource = getMatchedServlet(target);
+            return new MappedResource<>(matchedResource.getPathSpec(), matchedResource.getResource());
+        }
         return null;
     }
 
@@ -465,16 +470,15 @@ public class ServletHandler extends ScopedHandler
         ServletHolder servletHolder = null;
         UserIdentity.Scope oldScope = null;
 
-        MappedResource<ServletHolder> mapping = getMappedServlet(target);
-        if (mapping != null)
+        MatchedResource<ServletHolder> matched = getMatchedServlet(target);
+        if (matched != null)
         {
-            servletHolder = mapping.getResource();
+            servletHolder = matched.getResource();
 
-            if (mapping.getPathSpec() != null)
+            if (matched.getPathSpec() != null)
             {
-                PathSpec pathSpec = mapping.getPathSpec();
-                String servletPath = pathSpec.getPathMatch(target);
-                String pathInfo = pathSpec.getPathInfo(target);
+                String servletPath = matched.getPathMatch();
+                String pathInfo = matched.getPathInfo();
 
                 if (DispatcherType.INCLUDE.equals(type))
                 {
@@ -558,24 +562,39 @@ public class ServletHandler extends ScopedHandler
     }
 
     /**
-     * ServletHolder matching path.
+     * ServletHolder matching target path.
      *
      * @param target Path within _context or servlet name
-     * @return MappedResource to the ServletHolder.  Named servlets have a null PathSpec
+     * @return MatchedResource, pointing to the {@link MappedResource} for the {@link ServletHolder}, and also the pathspec specific name/info sections for the match.
+     *      Named servlets have a null PathSpec and {@link MatchedResource}.
      */
-    public MappedResource<ServletHolder> getMappedServlet(String target)
+    public MatchedResource<ServletHolder> getMatchedServlet(String target)
     {
         if (target.startsWith("/"))
         {
             if (_servletPathMap == null)
                 return null;
-            return _servletPathMap.getMatch(target);
+            return _servletPathMap.getMatched(target);
         }
 
         ServletHolder holder = _servletNameMap.get(target);
         if (holder == null)
             return null;
-        return new MappedResource<>(null, holder);
+        return new MatchedResource<>(holder, null, MatchedPath.EMPTY);
+    }
+
+    /**
+     * ServletHolder matching path.
+     *
+     * @param target Path within _context or servlet name
+     * @return MappedResource to the ServletHolder.  Named servlets have a null PathSpec
+     * @deprecated use {@link #getMatchedServlet(String)} instead
+     */
+    @Deprecated
+    public MappedResource<ServletHolder> getMappedServlet(String target)
+    {
+        MatchedResource<ServletHolder> matchedResource = getMatchedServlet(target);
+        return new MappedResource<>(matchedResource.getPathSpec(), matchedResource.getResource());
     }
 
     protected FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder)
@@ -1151,7 +1170,7 @@ public class ServletHandler extends ScopedHandler
             else
             {
                 //there are existing entries. If this is a programmatic filtermapping, it is added at the end of the list.
-                //If this is a normal filtermapping, it is inserted after all the other filtermappings (matchBefores and normals), 
+                //If this is a normal filtermapping, it is inserted after all the other filtermappings (matchBefores and normals),
                 //but before the first matchAfter filtermapping.
                 if (source == Source.JAVAX_API)
                 {
@@ -1299,7 +1318,13 @@ public class ServletHandler extends ScopedHandler
         }
     }
 
-    protected synchronized void updateMappings()
+    protected PathSpec asPathSpec(String pathSpec)
+    {
+        // By default only allow servlet path specs
+        return new ServletPathSpec(pathSpec);
+    }
+
+    protected void updateMappings()
     {
         // update filter mappings
         if (_filterMappings == null)
@@ -1388,7 +1413,7 @@ public class ServletHandler extends ScopedHandler
                         finalMapping = mapping;
                     else
                     {
-                        //already have a candidate - only accept another one 
+                        //already have a candidate - only accept another one
                         //if the candidate is a default, or we're allowing duplicate mappings
                         if (finalMapping.isDefault())
                             finalMapping = mapping;
@@ -1421,7 +1446,7 @@ public class ServletHandler extends ScopedHandler
                         finalMapping.getServletName(),
                         _servletNameMap.get(finalMapping.getServletName()).getSource());
 
-                pm.put(new ServletPathSpec(pathSpec), _servletNameMap.get(finalMapping.getServletName()));
+                pm.put(asPathSpec(pathSpec), _servletNameMap.get(finalMapping.getServletName()));
             }
 
             _servletPathMap = pm;

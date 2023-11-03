@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -34,10 +33,13 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.compression.HuffmanEncoder;
+import org.eclipse.jetty.http.compression.NBitIntegerEncoder;
+import org.eclipse.jetty.http.compression.NBitStringEncoder;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.http2.hpack.HpackContext.StaticEntry;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -97,34 +99,78 @@ public class HpackEncoder
 
     private final HpackContext _context;
     private final boolean _debug;
-    private int _remoteMaxDynamicTableSize;
-    private int _localMaxDynamicTableSize;
+    private int _maxTableCapacity;
+    private int _tableCapacity;
     private int _maxHeaderListSize;
     private int _headerListSize;
     private boolean _validateEncoding = true;
 
-    public HpackEncoder()
-    {
-        this(4096, 4096, -1);
-    }
-
+    @Deprecated
     public HpackEncoder(int localMaxDynamicTableSize)
     {
         this(localMaxDynamicTableSize, 4096, -1);
     }
 
+    @Deprecated
     public HpackEncoder(int localMaxDynamicTableSize, int remoteMaxDynamicTableSize)
     {
         this(localMaxDynamicTableSize, remoteMaxDynamicTableSize, -1);
     }
 
+    @Deprecated
     public HpackEncoder(int localMaxDynamicTableSize, int remoteMaxDynamicTableSize, int maxHeaderListSize)
     {
-        _context = new HpackContext(remoteMaxDynamicTableSize);
-        _remoteMaxDynamicTableSize = remoteMaxDynamicTableSize;
-        _localMaxDynamicTableSize = localMaxDynamicTableSize;
-        _maxHeaderListSize = maxHeaderListSize;
+        this();
+        setLocalMaxDynamicTableSize(localMaxDynamicTableSize);
+        setRemoteMaxDynamicTableSize(remoteMaxDynamicTableSize);
+        setMaxHeaderListSize(maxHeaderListSize);
+    }
+
+    public HpackEncoder()
+    {
+        _context = new HpackContext(0);
         _debug = LOG.isDebugEnabled();
+        setMaxTableCapacity(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
+        setTableCapacity(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
+    }
+
+    public int getMaxTableCapacity()
+    {
+        return _maxTableCapacity;
+    }
+
+    /**
+     * <p>Sets the limit for the capacity of the dynamic header table.</p>
+     * <p>This value is set by the remote peer via the
+     * {@code SETTINGS_HEADER_TABLE_SIZE} setting.</p>
+     *
+     * @param maxTableSizeLimit the limit for capacity of the dynamic header table
+     */
+    public void setMaxTableCapacity(int maxTableSizeLimit)
+    {
+        _maxTableCapacity = maxTableSizeLimit;
+    }
+
+    public int getTableCapacity()
+    {
+        return _tableCapacity;
+    }
+
+    /**
+     * <p>Sets the capacity of the dynamic header table.</p>
+     * <p>The value of the capacity may be changed from {@code 0}
+     * up to {@link #getMaxTableCapacity()}.
+     * An HPACK instruction with the new capacity value will
+     * be sent to the decoder when the next call to
+     * {@link #encode(ByteBuffer, MetaData)} is made.</p>
+     *
+     * @param tableCapacity the capacity of the dynamic header table
+     */
+    public void setTableCapacity(int tableCapacity)
+    {
+        if (tableCapacity > getMaxTableCapacity())
+            throw new IllegalArgumentException("Max table capacity exceeded");
+        _tableCapacity = tableCapacity;
     }
 
     public int getMaxHeaderListSize()
@@ -142,14 +188,16 @@ public class HpackEncoder
         return _context;
     }
 
-    public void setRemoteMaxDynamicTableSize(int remoteMaxDynamicTableSize)
+    @Deprecated
+    public void setRemoteMaxDynamicTableSize(int maxTableSize)
     {
-        _remoteMaxDynamicTableSize = remoteMaxDynamicTableSize;
+        setTableCapacity(maxTableSize);
     }
 
-    public void setLocalMaxDynamicTableSize(int localMaxDynamicTableSize)
+    @Deprecated
+    public void setLocalMaxDynamicTableSize(int maxTableSizeLimit)
     {
-        _localMaxDynamicTableSize = localMaxDynamicTableSize;
+        setMaxTableCapacity(maxTableSizeLimit);
     }
 
     public boolean isValidateEncoding()
@@ -185,10 +233,10 @@ public class HpackEncoder
             _headerListSize = 0;
             int pos = buffer.position();
 
-            // Check the dynamic table sizes!
-            int maxDynamicTableSize = Math.min(_remoteMaxDynamicTableSize, _localMaxDynamicTableSize);
-            if (maxDynamicTableSize != _context.getMaxDynamicTableSize())
-                encodeMaxDynamicTableSize(buffer, maxDynamicTableSize);
+            // If max table size changed, send the correspondent instruction.
+            int tableCapacity = getTableCapacity();
+            if (tableCapacity != _context.getMaxDynamicTableSize())
+                encodeMaxDynamicTableSize(buffer, tableCapacity);
 
             // Add Request/response meta fields
             if (metadata.isRequest())
@@ -255,13 +303,9 @@ public class HpackEncoder
                 }
             }
 
-            // Check size
-            if (_maxHeaderListSize > 0 && _headerListSize > _maxHeaderListSize)
-            {
-                LOG.warn("Header list size too large {} > {} for {}", _headerListSize, _maxHeaderListSize);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("metadata={}", metadata);
-            }
+            int maxHeaderListSize = getMaxHeaderListSize();
+            if (maxHeaderListSize > 0 && _headerListSize > maxHeaderListSize)
+                throw new HpackException.SessionException("Header size %d > %d", _headerListSize, maxHeaderListSize);
 
             if (LOG.isDebugEnabled())
                 LOG.debug(String.format("CtxTbl[%x] encoded %d octets", _context.hashCode(), buffer.position() - pos));
@@ -278,13 +322,11 @@ public class HpackEncoder
         }
     }
 
-    public void encodeMaxDynamicTableSize(ByteBuffer buffer, int maxDynamicTableSize)
+    public void encodeMaxDynamicTableSize(ByteBuffer buffer, int maxTableSize)
     {
-        if (maxDynamicTableSize > _remoteMaxDynamicTableSize)
-            throw new IllegalArgumentException();
         buffer.put((byte)0x20);
-        NBitInteger.encode(buffer, 5, maxDynamicTableSize);
-        _context.resize(maxDynamicTableSize);
+        NBitIntegerEncoder.encode(buffer, 5, maxTableSize);
+        _context.resize(maxTableSize);
     }
 
     public void encode(ByteBuffer buffer, HttpField field)
@@ -294,8 +336,6 @@ public class HpackEncoder
 
         int fieldSize = field.getName().length() + field.getValue().length();
         _headerListSize += fieldSize + 32;
-
-        final int p = _debug ? buffer.position() : -1;
 
         String encoding = null;
 
@@ -314,9 +354,9 @@ public class HpackEncoder
             {
                 int index = _context.index(entry);
                 buffer.put((byte)0x80);
-                NBitInteger.encode(buffer, 7, index);
+                NBitIntegerEncoder.encode(buffer, 7, index);
                 if (_debug)
-                    encoding = "IdxField" + (entry.isStatic() ? "S" : "") + (1 + NBitInteger.octectsNeeded(7, index));
+                    encoding = "IdxField" + (entry.isStatic() ? "S" : "") + NBitIntegerEncoder.octetsNeeded(7, index);
             }
         }
         else
@@ -390,19 +430,19 @@ public class HpackEncoder
 
                     if (_debug)
                         encoding = "Lit" +
-                            ((name == null) ? "HuffN" : ("IdxN" + (name.isStatic() ? "S" : "") + (1 + NBitInteger.octectsNeeded(4, _context.index(name))))) +
+                            ((name == null) ? "HuffN" : ("IdxN" + (name.isStatic() ? "S" : "") + (1 + NBitIntegerEncoder.octetsNeeded(4, _context.index(name))))) +
                             (huffman ? "HuffV" : "LitV") +
                             (neverIndex ? "!!Idx" : "!Idx");
                 }
                 else if (fieldSize >= _context.getMaxDynamicTableSize() || header == HttpHeader.CONTENT_LENGTH && !"0".equals(field.getValue()))
                 {
-                    // The field is too large or a non zero content length, so do not index.
+                    // The field is too large or a non-zero content length, so do not index.
                     indexed = false;
                     encodeName(buffer, (byte)0x00, 4, header.asString(), name);
                     encodeValue(buffer, true, field.getValue());
                     if (_debug)
                         encoding = "Lit" +
-                            ((name == null) ? "HuffN" : "IdxNS" + (1 + NBitInteger.octectsNeeded(4, _context.index(name)))) +
+                            ((name == null) ? "HuffN" : "IdxNS" + (1 + NBitIntegerEncoder.octetsNeeded(4, _context.index(name)))) +
                             "HuffV!Idx";
                 }
                 else
@@ -413,7 +453,7 @@ public class HpackEncoder
                     encodeName(buffer, (byte)0x40, 6, header.asString(), name);
                     encodeValue(buffer, huffman, field.getValue());
                     if (_debug)
-                        encoding = ((name == null) ? "LitHuffN" : ("LitIdxN" + (name.isStatic() ? "S" : "") + (1 + NBitInteger.octectsNeeded(6, _context.index(name))))) +
+                        encoding = ((name == null) ? "LitHuffN" : ("LitIdxN" + (name.isStatic() ? "S" : "") + (1 + NBitIntegerEncoder.octetsNeeded(6, _context.index(name))))) +
                             (huffman ? "HuffVIdx" : "LitVIdx");
                 }
             }
@@ -425,10 +465,8 @@ public class HpackEncoder
 
         if (_debug)
         {
-            byte[] bytes = new byte[buffer.position() - p];
-            buffer.position(p);
-            buffer.get(bytes);
-            LOG.debug("encode {}:'{}' to '{}'", encoding, field, TypeUtil.toHexString(bytes));
+            if (LOG.isDebugEnabled())
+                LOG.debug("encode {}:'{}' to '{}'", encoding, field, BufferUtil.toHexString((ByteBuffer)buffer.duplicate().flip()));
         }
     }
 
@@ -440,55 +478,17 @@ public class HpackEncoder
             // leave name index bits as 0
             // Encode the name always with lowercase huffman
             buffer.put((byte)0x80);
-            NBitInteger.encode(buffer, 7, Huffman.octetsNeededLC(name));
-            Huffman.encodeLC(buffer, name);
+            NBitIntegerEncoder.encode(buffer, 7, HuffmanEncoder.octetsNeededLowerCase(name));
+            HuffmanEncoder.encodeLowerCase(buffer, name);
         }
         else
         {
-            NBitInteger.encode(buffer, bits, _context.index(entry));
+            NBitIntegerEncoder.encode(buffer, bits, _context.index(entry));
         }
     }
 
     static void encodeValue(ByteBuffer buffer, boolean huffman, String value)
     {
-        if (huffman)
-        {
-            // huffman literal value
-            buffer.put((byte)0x80);
-
-            int needed = Huffman.octetsNeeded(value);
-            if (needed >= 0)
-            {
-                NBitInteger.encode(buffer, 7, needed);
-                Huffman.encode(buffer, value);
-            }
-            else
-            {
-                // Not iso_8859_1
-                byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-                NBitInteger.encode(buffer, 7, Huffman.octetsNeeded(bytes));
-                Huffman.encode(buffer, bytes);
-            }
-        }
-        else
-        {
-            // add literal assuming iso_8859_1
-            buffer.put((byte)0x00).mark();
-            NBitInteger.encode(buffer, 7, value.length());
-            for (int i = 0; i < value.length(); i++)
-            {
-                char c = value.charAt(i);
-                if (c < ' ' || c > 127)
-                {
-                    // Not iso_8859_1, so re-encode as UTF-8
-                    buffer.reset();
-                    byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-                    NBitInteger.encode(buffer, 7, bytes.length);
-                    buffer.put(bytes, 0, bytes.length);
-                    return;
-                }
-                buffer.put((byte)c);
-            }
-        }
+        NBitStringEncoder.encode(buffer, 8, value, huffman);
     }
 }

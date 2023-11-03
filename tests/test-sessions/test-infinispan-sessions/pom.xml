@@ -4,27 +4,19 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>9.4.44.v20210927</version>
+    <version>9.4.53.v20231009</version>
   </parent>
   <artifactId>test-infinispan-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Infinispan</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.infinispan</bundle-symbolic-name>
     <!-- if changing this version please update default in RemoteInfinispanTestSupport you will get thanks from Eclipse IDE users -->
-    <infinispan.docker.image.version>${infinispan.version}</infinispan.docker.image.version>
+    <infinispan.docker.image.version>11.0.9.Final</infinispan.docker.image.version>
     <!-- from 10.xx it has changed to jboss/infinispan -->
-    <infinispan.docker.image.name>jboss/infinispan-server</infinispan.docker.image.name>
+    <infinispan.docker.image.name>infinispan/server</infinispan.docker.image.name>
   </properties>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- DO NOT DEPLOY (or Release) -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -89,8 +81,15 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
+      <artifactId>infinispan-embedded-query</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>infinispan-remote-query</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -108,6 +107,12 @@
       <artifactId>infinispan-core</artifactId>
       <version>${infinispan.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.wildfly.common</groupId>
+          <artifactId>wildfly-common</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
@@ -120,6 +125,13 @@
       <artifactId>infinispan-client-hotrod</artifactId>
       <version>${infinispan.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <!-- this is depending on an old log4j version which have this issue https://issues.apache.org/jira/browse/LOG4J2-3241 -->
+        <exclusion>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>

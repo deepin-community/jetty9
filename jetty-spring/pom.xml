@@ -2,28 +2,22 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.44.v20210927</version>
+    <version>9.4.53.v20231009</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-spring</artifactId>
   <name>Example :: Jetty Spring</name>
 
   <properties>
-    <spring-version>3.2.8.RELEASE</spring-version>
+    <spring-version>5.3.30</spring-version>
     <dependencies>target/dependencies</dependencies>
     <bundle-symbolic-name>${project.groupId}.spring</bundle-symbolic-name>
+    <jacoco.skip>true</jacoco.skip>
   </properties>
 
   <build>
     <defaultGoal>install</defaultGoal>
     <plugins>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>

@@ -1,3 +1,95 @@
+jetty-9.4.53.v20231009 - 09 October 2023
+ + 10546 backport jetty-http Huffman encoders/decoders from Jetty 10.0.x
+ + 10573 backport hpack improvements from Jetty 10.0.x
+ + 10679 backport HTTP/2 rate control from Jetty 10.0.x
+
+jetty-9.4.52.v20230823 - 23 August 2023
+ + 9476 onCompleteFailure called multiple times
+ + 9660 OpenId Revoked authentication allows one request (CVE-2023-41900)
+ + 9887 Deprecate CGI Servlet (CVE-2023-36479)
+ + 10066 Allow `SAXParserFactory` or `SAXParser` to be configured in Jetty's
+   `XmlParser` class
+ + 10168 NPE in websocket extension startup
+ + 10352 Jetty accepts "+" prefixed value in Content-Length (CVE-2023-40167)
+ + 10337 SizeLimitHandler does not enforce 0 responseLimit
+
+jetty-9.4.51.v20230217 - 17 February 2023
+ + 9059 IteratingCallback not serializing close() and failed()
+ + 9181 NPE in SessionHandler.checkRequestedSessionId()
+ + 9345 Backport Fix for CVE-2023-26048
+ + 9352 Backport Fix for CVE-2023-26049
+
+jetty-9.4.50.v20221201 - 01 December 2022
+ + 8774 Added SizeLimitHandler
+ + 8678 Jetty client is not responding to GO_AWAY packet received from (Jetty)
+   Server and continue to send traffic on same connection
+
+jetty-9.4.49.v20220914 - 14 September 2022
+ + 8414 BlockingArrayQueue drops all contents on drain
+ + 8493 Review HTTP client feature `setRemoveIdleDestinations`
+ + 8578 `getRequestURL` can append "null" if `getRequestURI` is unspecified in
+   an authority-form request-target
+
+jetty-9.4.48.v20220622 - 21 June 2022
+ + 8184 All suffix globs except first fail to match if path has . character in
+   prefix
+
+jetty-9.4.47.v20220610 - 10 June 2022
+ + 4717 High CPU spikes with jetty winstone threads
+ + 7748 Allow overriding of url-pattern mapping in ServletContextHandler to
+   allow for regex or uri-template matching
+ + 7801 Session cookie can be set twice after session id changed
+ + 7855 Remove accidentally included package-info.class in all packages
+ + 7858 GZipHandler does not play nice with other handlers in HandlerCollection
+ + 7863 Default servlet drops first accept-encoding header if there is more
+   than one.
+ + 7918 PathMappings.asPathSpec does not allow root ServletPathSpec
+ + 7935 Review HTTP/2 error handling (Resolves CVE-2022-2048)
+ + 8014 Review HttpRequest URI construction (Resolves CVE-2022-2047)
+ + 8067 Wall time usage in DoSFilter RateTracker results in false positive
+   alert
+ + 8088 Add option to configure exitVm on ShutdownMonitor from System
+   properties
+
+jetty-9.4.46.v20220331 - 31 March 2022
+ + 5965 Option --write-module-graph produces wrong .dot file
+ + 6756 Deprecate `/jetty-spring/` artifact in `jetty-9.4.x` releases
+ + 7518 ArrayTrie getBest fails to match the empty string entry in certain
+   cases
+ + 7548 Interrupt flag is not always cleared in between requests
+ + 7567 Gzip compression not working for multipart/form-data when added to the
+   allowed list using addIncludedMimeTypes.
+ + 7569 Miconfigured headerCacheSize in can result in IllegalArgumentException
+ + 7615 HttpServletResponse.encodeURL not working for URLs starting with ../
+
+jetty-9.4.45.v20220203 - 03 February 2022
+ + 4275 Path Normalization/Traversal - Context Matching
+ + 6497 Replace SameFileAliasChecker
+ + 6687 Upgrade Infinispan in all active Jetty branches
+ + 6965 Expose Spec `ServerContainer.upgrade()` API
+ + 6969 Getting 404 failures when trying to enable `logging-log4j` module
+ + 6974 Major websocket memory change in 9.4.36
+ + 7031 ResponseWriter.println(char) does not print newline
+ + 7059 NPE in AllowedResourceAliasChecker.getPath()
+ + 7073 Error in parse parameter in broken UTF-8 encoding
+ + 7078 CompressionPools are not shared between multiple contexts for 9.4
+   WebSocket
+ + 7107 Client timeout and async close exceptions when setting max duration on
+   pool
+ + 7124 Add default methods on LifeCycle.Listener interface
+ + 7157 Multiplexed connection pools retain CLOSED entries
+ + 7243 Reset pooled ByteBuffer endianness
+ + 7266 Wrong ALPN jars are selected for newer versions of JDK8
+ + 7271 It is necessary to set MAX_CAPACITY to ArrayTernaryTrie/ArrayTrie
+ + 7277 Allow override of `ServletRequest.getLocalName()` and `.getLocalPort()`
+   in post-intermediary scenarios
+ + 7297 Deprecate log4j 1.x support
+ + 7348 Slow CONNECT request causes NPE
+ + 7375 Some environments require Request scoping during session save
+ + 7435 Investigate Infinispan transitive dependencies
+ + 7440 ContextHandler.getAliasChecks() breaks Spring Boot
+ + 7496 Transient 400: Bad Request responses in jetty-9.4.45.v20220128
+
 jetty-9.4.44.v20210927 - 27 September 2021
  + 3514 Use interpolation of versions from pom in mod files
  + 6369 Increment default jetty.http2.rateControl.maxEventsPerSecond
@@ -5,10 +97,10 @@ jetty-9.4.44.v20210927 - 27 September 2021
  + 6487 Expose ServletHolder getter in ServletHandler$ChainEnd for auditing
    libraries to use
  + 6491 onDataAvailable() not called when HttpParser is closed prematurely
- + 6520 Error page has HTML error when writePoweredBy is enabled.
+ + 6520 Error page has HTML error when writePoweredBy is enabled
  + 6545 image/webp MIME type support
  + 6553 Review usage of Authentication.UNAUTHENTICATED in SecurityHandler
- + 6554 Allow creation of DefaultIdentityService without realmName.
+ + 6554 Allow creation of DefaultIdentityService without realmName
  + 6558 Allow to configure return type in JSON array parsing
  + 6562 HttpOutput.write(ByteBuffer buffer)
  + 6603 HTTP/2 max local stream count exceeded

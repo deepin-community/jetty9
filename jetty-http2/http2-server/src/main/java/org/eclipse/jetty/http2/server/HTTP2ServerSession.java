@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,6 +37,7 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
@@ -50,9 +51,16 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
 
     private final ServerSessionListener listener;
 
+    @Deprecated
     public HTTP2ServerSession(Scheduler scheduler, EndPoint endPoint, Generator generator, ServerSessionListener listener, FlowControlStrategy flowControl)
     {
-        super(scheduler, endPoint, generator, listener, flowControl, 2);
+        this(scheduler, endPoint, null, generator, listener, flowControl);
+        throw new UnsupportedOperationException();
+    }
+
+    public HTTP2ServerSession(Scheduler scheduler, EndPoint endPoint, Parser parser, Generator generator, ServerSessionListener listener, FlowControlStrategy flowControl)
+    {
+        super(scheduler, endPoint, parser, generator, listener, flowControl, 2);
         this.listener = listener;
     }
 
@@ -104,10 +112,11 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                     {
                         onStreamOpened(stream);
                         stream.process(frame, Callback.NOOP);
-                        if (stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-                            removeStream(stream);
+                        boolean closed = stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
                         Stream.Listener listener = notifyNewStream(stream, frame);
                         stream.setListener(listener);
+                        if (closed)
+                            removeStream(stream);
                     }
                 }
             }
@@ -126,9 +135,10 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             if (stream != null)
             {
                 stream.process(frame, Callback.NOOP);
-                if (stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-                    removeStream(stream);
+                boolean closed = stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
                 notifyHeaders(stream, frame);
+                if (closed)
+                    removeStream(stream);
             }
             else
             {

@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>infinispan-parent</artifactId>
-    <version>9.4.44.v20210927</version>
+    <version>9.4.53.v20231009</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>infinispan-embedded-query</artifactId>
@@ -89,12 +89,16 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-query</artifactId>
-      <version>${infinispan.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.jboss.logging</groupId>
+          <artifactId>jboss-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
-      <scope>test</scope>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging</artifactId>
     </dependency>
   </dependencies>
 </project>

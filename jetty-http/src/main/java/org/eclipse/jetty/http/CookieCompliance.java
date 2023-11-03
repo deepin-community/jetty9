@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,5 +24,6 @@ package org.eclipse.jetty.http;
 public enum CookieCompliance
 {
     RFC6265,
+    RFC6265_LEGACY, // Forgiving of bad quotes.
     RFC2965
 }

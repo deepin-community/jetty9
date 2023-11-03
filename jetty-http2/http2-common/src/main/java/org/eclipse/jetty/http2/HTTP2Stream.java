@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -137,14 +137,23 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public void reset(ResetFrame frame, Callback callback)
     {
+        Throwable resetFailure = null;
         synchronized (this)
         {
             if (isReset())
-                return;
-            localReset = true;
-            failure = new EOFException("reset");
+            {
+                resetFailure = failure;
+            }
+            else
+            {
+                localReset = true;
+                failure = new EOFException("reset");
+            }
         }
-        ((HTTP2Session)session).reset(this, frame, callback);
+        if (resetFailure != null)
+            callback.failed(resetFailure);
+        else
+            ((HTTP2Session)session).reset(this, frame, callback);
     }
 
     private boolean startWrite(Callback callback)
@@ -381,10 +390,10 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             }
         }
 
-        if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-            session.removeStream(this);
-
+        boolean closed = updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
         notifyData(this, frame, callback);
+        if (closed)
+            session.removeStream(this);
     }
 
     private void onReset(ResetFrame frame, Callback callback)
@@ -397,6 +406,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         close();
         if (session.removeStream(this))
             notifyReset(this, frame, callback);
+        else
+            callback.succeeded();
     }
 
     private void onPush(PushPromiseFrame frame, Callback callback)
@@ -421,6 +432,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         close();
         if (session.removeStream(this))
             notifyFailure(this, frame, callback);
+        else
+            callback.succeeded();
     }
 
     @Override

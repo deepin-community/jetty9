@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -63,6 +63,12 @@ public class JsrHandshakeRequest implements HandshakeRequest
     public PathSpec getRequestPathSpec()
     {
         return (PathSpec)request.getServletAttribute(PathSpec.class.getName());
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, String> getPathParams()
+    {
+        return (Map<String, String>)request.getServletAttribute(ServerContainer.PATH_PARAM_ATTRIBUTE);
     }
 
     @Override

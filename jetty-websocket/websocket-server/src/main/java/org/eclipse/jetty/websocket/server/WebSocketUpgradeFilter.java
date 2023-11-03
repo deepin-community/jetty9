@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +31,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.pathmap.MappedResource;
+import org.eclipse.jetty.http.pathmap.MatchedResource;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -44,7 +44,27 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 /**
+ * <p>
  * Inline Servlet Filter to capture WebSocket upgrade requests and perform path mappings to {@link WebSocketCreator} objects.
+ * </p>
+ *
+ * <p>
+ * <em>Embedded Jetty Users</em> should initialize this filter using the {@link #configure(ServletContextHandler)} method.
+ * If you also want to establish some mappings of {@link PathSpec} to {@link WebSocketCreator} against this {@code WebSocketUpgradeFilter}
+ * then these actions must occur during the Servlet Initialization Phase.
+ * A convenience method is provided with {@link NativeWebSocketServletContainerInitializer#configure(ServletContextHandler, NativeWebSocketServletContainerInitializer.Configurator)}
+ * to create a lambda that will execute during the appropriate Servlet Initialization Phase.
+ * </p>
+ * <pre>
+ *     ServletContextHandler contextHandler = new ServletContextHandler(...);
+ *     WebSocketUpgradeFilter.configure(contextHandler);
+ *     NativeWebSocketServletContainerInitializer.configure(contextHandler, (context, container) -&gt; {
+ *         container.getPolicy().setMaxTextMessageBufferSize(65535);
+ *         container.getPolicy().setInputBufferSize(16384);
+ *         container.addMapping("/echo", ServerEchoSocket.class);
+ *         container.addMapping(new ServletPathSpec("/api"), (req, resp) -&gt; new ServerApiSocket());
+ *     });
+ * </pre>
  */
 @ManagedObject("WebSocket Upgrade Filter")
 public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, Dumpable
@@ -67,7 +87,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
      * </p>
      *
      * @param context the {@link ServletContextHandler} to use
-     * @return the configured default {@link WebSocketUpgradeFilter} instance
+     * @return the configured default {@link WebSocketUpgradeFilter} instance, use this reference later in your Servlet Initialization Phase to establish mappings of websockets.
      * @throws ServletException if the filer cannot be configured
      */
     public static WebSocketUpgradeFilter configure(ServletContextHandler context) throws ServletException
@@ -77,8 +97,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
         if (filter == null)
         {
             // Dynamically add filter
-            NativeWebSocketConfiguration configuration = NativeWebSocketServletContainerInitializer.initialize(context);
-            filter = new WebSocketUpgradeFilter(configuration);
+            filter = new WebSocketUpgradeFilter();
             filter.setToAttribute(context, ATTR_KEY);
 
             String name = "Jetty_WebSocketUpgradeFilter";
@@ -109,7 +128,9 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     @Deprecated
     public static WebSocketUpgradeFilter configureContext(ServletContextHandler context) throws ServletException
     {
-        return configure(context);
+        WebSocketUpgradeFilter upgradeFilter = configure(context);
+        upgradeFilter.configuration = NativeWebSocketServletContainerInitializer.initialize(context);
+        return upgradeFilter;
     }
 
     /**
@@ -126,11 +147,10 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
         {
             throw new ServletException("Not running on Jetty, WebSocket support unavailable");
         }
-        return configure(handler);
+        return configureContext(handler);
     }
 
     private NativeWebSocketConfiguration configuration;
-    private String instanceKey;
     private boolean localConfiguration = false;
     private boolean alreadySetToAttribute = false;
 
@@ -139,16 +159,34 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
         // do nothing
     }
 
+    @Deprecated
     public WebSocketUpgradeFilter(WebSocketServerFactory factory)
     {
         this(new NativeWebSocketConfiguration(factory));
     }
 
+    @Deprecated
     public WebSocketUpgradeFilter(NativeWebSocketConfiguration configuration)
     {
         this.configuration = configuration;
     }
 
+    /**
+     * <p>
+     * Add Mapping to underlying {@link NativeWebSocketConfiguration}
+     * </p>
+     *
+     * <p>
+     * IMPORTANT: Can only be used during Servlet Initialization phase.
+     * </p>
+     *
+     * <p>
+     * Embedded Jetty users, consider using {@link NativeWebSocketServletContainerInitializer#configure(ServletContextHandler, NativeWebSocketServletContainerInitializer.Configurator)}
+     * instead to define mappings early that happen during the Servlet Initialization phase.
+     * </p>
+     *
+     * @see NativeWebSocketConfiguration#addMapping(PathSpec, WebSocketCreator)
+     */
     @Override
     public void addMapping(PathSpec spec, WebSocketCreator creator)
     {
@@ -165,12 +203,38 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
         configuration.addMapping(spec, creator);
     }
 
+    /**
+     * <p>
+     * Add Mapping to underlying {@link NativeWebSocketConfiguration}
+     * </p>
+     *
+     * <p>
+     * IMPORTANT: Can only be used during Servlet Initialization phase.
+     * </p>
+     *
+     * <p>
+     * Embedded Jetty users, consider using {@link NativeWebSocketServletContainerInitializer#configure(ServletContextHandler, NativeWebSocketServletContainerInitializer.Configurator)}
+     * instead to define mappings early that happen during the Servlet Initialization phase.
+     * </p>
+     *
+     * @see NativeWebSocketConfiguration#addMapping(String, WebSocketCreator)
+     */
     @Override
     public void addMapping(String spec, WebSocketCreator creator)
     {
         configuration.addMapping(spec, creator);
     }
 
+    /**
+     * <p>
+     * Remove Mapping to underlying {@link NativeWebSocketConfiguration}
+     * </p>
+     *
+     * <p>
+     * IMPORTANT: Can only be used during Servlet Initialization phase.
+     * </p>
+     * @see NativeWebSocketConfiguration#removeMapping(String)
+     */
     @Override
     public boolean removeMapping(String spec)
     {
@@ -238,7 +302,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
                 target = target + httpreq.getPathInfo();
             }
 
-            MappedResource<WebSocketCreator> resource = configuration.getMatch(target);
+            MatchedResource<WebSocketCreator> resource = configuration.getMatched(target);
             if (resource == null)
             {
                 // no match.
@@ -378,7 +442,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
                 getFactory().getPolicy().setInputBufferSize(Integer.parseInt(max));
             }
 
-            instanceKey = config.getInitParameter(CONTEXT_ATTRIBUTE_KEY);
+            String instanceKey = config.getInitParameter(CONTEXT_ATTRIBUTE_KEY);
             if (instanceKey == null)
             {
                 // assume default

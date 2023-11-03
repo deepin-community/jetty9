@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -101,7 +101,10 @@ public class DeploymentTempDirTest
     public void testTmpDirectory() throws Exception
     {
         Path warPath = MavenTestingUtils.getTestResourcePath("webapps/foo-webapp-1.war");
-        String deploymentXml = "<Configure class=\"org.eclipse.jetty.webapp.WebAppContext\">\n" +
+        String deploymentXml =
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
+            "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://eclipse.dev/jetty/configure.dtd\">\n" +
+            "<Configure class=\"org.eclipse.jetty.webapp.WebAppContext\">\n" +
             "<Set name=\"war\">" + warPath + "</Set>\n" +
             "<Set name=\"tempDirectory\">" + tmpDir + "</Set>\n" +
             "<Set name=\"persistTempDirectory\">false</Set>\n" +
@@ -141,7 +144,10 @@ public class DeploymentTempDirTest
     public void testPersistentTmpDirectory() throws Exception
     {
         Path warPath = MavenTestingUtils.getTestResourcePath("webapps/foo-webapp-1.war");
-        String deploymentXml = "<Configure class=\"org.eclipse.jetty.webapp.WebAppContext\">\n" +
+        String deploymentXml =
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
+            "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://eclipse.dev/jetty/configure.dtd\">\n" +
+            "<Configure class=\"org.eclipse.jetty.webapp.WebAppContext\">\n" +
             "<Set name=\"war\">" + warPath + "</Set>\n" +
             "<Set name=\"tempDirectory\">" + tmpDir + "</Set>\n" +
             "<Set name=\"persistTempDirectory\">true</Set>\n" +

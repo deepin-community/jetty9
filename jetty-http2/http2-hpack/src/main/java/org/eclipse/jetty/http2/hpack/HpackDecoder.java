@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,8 +24,12 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTokens;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.compression.EncodingException;
+import org.eclipse.jetty.http.compression.HuffmanDecoder;
+import org.eclipse.jetty.http.compression.NBitIntegerDecoder;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
-import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -41,17 +45,27 @@ public class HpackDecoder
 
     private final HpackContext _context;
     private final MetaDataBuilder _builder;
-    private int _localMaxDynamicTableSize;
+    private final HuffmanDecoder _huffmanDecoder;
+    private final NBitIntegerDecoder _integerDecoder;
+    private int _maxTableCapacity;
 
-    /**
-     * @param localMaxDynamicTableSize The maximum allowed size of the local dynamic header field table.
-     * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters, plus 32 per field
-     */
+    @Deprecated
     public HpackDecoder(int localMaxDynamicTableSize, int maxHeaderSize)
     {
-        _context = new HpackContext(localMaxDynamicTableSize);
-        _localMaxDynamicTableSize = localMaxDynamicTableSize;
+        this(maxHeaderSize);
+    }
+
+    /**
+     * @param maxHeaderSize The maximum allowed size of a decoded headers block,
+     * expressed as total of all name and value bytes, plus 32 bytes per field
+     */
+    public HpackDecoder(int maxHeaderSize)
+    {
+        _context = new HpackContext(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
         _builder = new MetaDataBuilder(maxHeaderSize);
+        _huffmanDecoder = new HuffmanDecoder();
+        _integerDecoder = new NBitIntegerDecoder();
+        setMaxTableCapacity(HpackContext.DEFAULT_MAX_TABLE_CAPACITY);
     }
 
     public HpackContext getHpackContext()
@@ -59,9 +73,44 @@ public class HpackDecoder
         return _context;
     }
 
-    public void setLocalMaxDynamicTableSize(int localMaxdynamciTableSize)
+    public int getMaxTableCapacity()
     {
-        _localMaxDynamicTableSize = localMaxdynamciTableSize;
+        return _maxTableCapacity;
+    }
+
+    /**
+     * <p>Sets the limit for the capacity of the dynamic header table.</p>
+     * <p>This value acts as a limit for the values received from the
+     * remote peer via the HPACK dynamic table size update instruction.</p>
+     * <p>After calling this method, a SETTINGS frame must be sent to the other
+     * peer, containing the {@code SETTINGS_HEADER_TABLE_SIZE} setting with
+     * the value passed as argument to this method.</p>
+     *
+     * @param maxTableCapacity the limit for capacity of the dynamic header table
+     */
+    public void setMaxTableCapacity(int maxTableCapacity)
+    {
+        _maxTableCapacity = maxTableCapacity;
+    }
+
+    /**
+     * @param maxTableSizeLimit the local dynamic table max size
+     * @deprecated use {@link #setMaxTableCapacity(int)} instead
+     */
+    @Deprecated
+    public void setLocalMaxDynamicTableSize(int maxTableSizeLimit)
+    {
+        setMaxTableCapacity(maxTableSizeLimit);
+    }
+
+    public int getMaxHeaderListSize()
+    {
+        return _builder.getMaxSize();
+    }
+
+    public void setMaxHeaderListSize(int maxHeaderListSize)
+    {
+        _builder.setMaxSize(maxHeaderListSize);
     }
 
     public MetaData decode(ByteBuffer buffer) throws HpackException.SessionException, HpackException.StreamException
@@ -69,27 +118,22 @@ public class HpackDecoder
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("CtxTbl[%x] decoding %d octets", _context.hashCode(), buffer.remaining()));
 
-        // If the buffer is big, don't even think about decoding it
-        if (buffer.remaining() > _builder.getMaxSize())
-            throw new HpackException.SessionException("431 Request Header Fields too large");
+        // If the buffer is larger than the max headers size, don't even start decoding it.
+        int maxSize = _builder.getMaxSize();
+        if (maxSize > 0 && buffer.remaining() > maxSize)
+            throw new HpackException.SessionException("Header fields size too large");
 
         boolean emitted = false;
-
         while (buffer.hasRemaining())
         {
-            if (LOG.isDebugEnabled() && buffer.hasArray())
-            {
-                int l = Math.min(buffer.remaining(), 32);
-                LOG.debug("decode {}{}",
-                    TypeUtil.toHexString(buffer.array(), buffer.arrayOffset() + buffer.position(), l),
-                    l < buffer.remaining() ? "..." : "");
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("decode {}", BufferUtil.toHexString(buffer));
 
             byte b = buffer.get();
             if (b < 0)
             {
                 // 7.1 indexed if the high bit is set
-                int index = NBitInteger.decode(buffer, 7);
+                int index = integerDecode(buffer, 7);
                 Entry entry = _context.get(index);
                 if (entry == null)
                     throw new HpackException.SessionException("Unknown index %d", index);
@@ -130,11 +174,11 @@ public class HpackDecoder
                     case 2: // 7.3
                     case 3: // 7.3
                         // change table size
-                        int size = NBitInteger.decode(buffer, 5);
+                        int size = integerDecode(buffer, 5);
                         if (LOG.isDebugEnabled())
-                            LOG.debug("decode resize=" + size);
-                        if (size > _localMaxDynamicTableSize)
-                            throw new IllegalArgumentException();
+                            LOG.debug("decode resize={}", size);
+                        if (size > getMaxTableCapacity())
+                            throw new HpackException.CompressionException("Dynamic table resize exceeded max limit");
                         if (emitted)
                             throw new HpackException.CompressionException("Dynamic table resize after fields");
                         _context.resize(size);
@@ -143,7 +187,7 @@ public class HpackDecoder
                     case 0: // 7.2.2
                     case 1: // 7.2.3
                         indexed = false;
-                        nameIndex = NBitInteger.decode(buffer, 4);
+                        nameIndex = integerDecode(buffer, 4);
                         break;
 
                     case 4: // 7.2.1
@@ -151,7 +195,7 @@ public class HpackDecoder
                     case 6: // 7.2.1
                     case 7: // 7.2.1
                         indexed = true;
-                        nameIndex = NBitInteger.decode(buffer, 6);
+                        nameIndex = integerDecode(buffer, 6);
                         break;
 
                     default:
@@ -170,12 +214,11 @@ public class HpackDecoder
                 else
                 {
                     huffmanName = (buffer.get() & 0x80) == 0x80;
-                    int length = NBitInteger.decode(buffer, 7);
-                    _builder.checkSize(length, huffmanName);
+                    int length = integerDecode(buffer, 7);
                     if (huffmanName)
-                        name = Huffman.decode(buffer, length);
+                        name = huffmanDecode(buffer, length);
                     else
-                        name = toASCIIString(buffer, length);
+                        name = toISO88591String(buffer, length);
                     check:
                     for (int i = name.length(); i-- > 0; )
                     {
@@ -211,12 +254,11 @@ public class HpackDecoder
 
                 // decode the value
                 boolean huffmanValue = (buffer.get() & 0x80) == 0x80;
-                int length = NBitInteger.decode(buffer, 7);
-                _builder.checkSize(length, huffmanValue);
+                int length = integerDecode(buffer, 7);
                 if (huffmanValue)
-                    value = Huffman.decode(buffer, length);
+                    value = huffmanDecode(buffer, length);
                 else
-                    value = toASCIIString(buffer, length);
+                    value = toISO88591String(buffer, length);
 
                 // Make the new field
                 HttpField field;
@@ -277,19 +319,61 @@ public class HpackDecoder
         return _builder.build();
     }
 
-    public static String toASCIIString(ByteBuffer buffer, int length)
+    private int integerDecode(ByteBuffer buffer, int prefix) throws HpackException.CompressionException
     {
-        StringBuilder builder = new StringBuilder(length);
-        int position = buffer.position();
-        int start = buffer.arrayOffset() + position;
-        int end = start + length;
-        buffer.position(position + length);
-        byte[] array = buffer.array();
-        for (int i = start; i < end; i++)
+        try
         {
-            builder.append((char)(0x7f & array[i]));
+            if (prefix != 8)
+                buffer.position(buffer.position() - 1);
+
+            _integerDecoder.setPrefix(prefix);
+            int decodedInt = _integerDecoder.decodeInt(buffer);
+            if (decodedInt < 0)
+                throw new EncodingException("invalid integer encoding");
+            return decodedInt;
         }
-        return builder.toString();
+        catch (EncodingException e)
+        {
+            HpackException.CompressionException compressionException = new HpackException.CompressionException(e.getMessage());
+            compressionException.initCause(e);
+            throw compressionException;
+        }
+        finally
+        {
+            _integerDecoder.reset();
+        }
+    }
+
+    private String huffmanDecode(ByteBuffer buffer, int length) throws HpackException.CompressionException
+    {
+        try
+        {
+            _huffmanDecoder.setLength(length);
+            String decoded = _huffmanDecoder.decode(buffer);
+            if (decoded == null)
+                throw new HpackException.CompressionException("invalid string encoding");
+            return decoded;
+        }
+        catch (EncodingException e)
+        {
+            HpackException.CompressionException compressionException = new HpackException.CompressionException(e.getMessage());
+            compressionException.initCause(e);
+            throw compressionException;
+        }
+        finally
+        {
+            _huffmanDecoder.reset();
+        }
+    }
+
+    public static String toISO88591String(ByteBuffer buffer, int length)
+    {
+        CharsetStringBuilder.Iso88591StringBuilder builder = new CharsetStringBuilder.Iso88591StringBuilder();
+        for (int i = 0; i < length; ++i)
+        {
+            builder.append(HttpTokens.sanitizeFieldVchar((char)buffer.get()));
+        }
+        return builder.build();
     }
 
     @Override

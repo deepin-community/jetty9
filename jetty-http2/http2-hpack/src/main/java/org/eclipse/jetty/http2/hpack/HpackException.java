@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-@SuppressWarnings("serial")
 public abstract class HpackException extends Exception
 {
     HpackException(String messageFormat, Object... args)
@@ -35,7 +34,7 @@ public abstract class HpackException extends Exception
      */
     public static class StreamException extends HpackException
     {
-        StreamException(String messageFormat, Object... args)
+        public StreamException(String messageFormat, Object... args)
         {
             super(messageFormat, args);
         }
@@ -48,7 +47,7 @@ public abstract class HpackException extends Exception
      */
     public static class SessionException extends HpackException
     {
-        SessionException(String messageFormat, Object... args)
+        public SessionException(String messageFormat, Object... args)
         {
             super(messageFormat, args);
         }

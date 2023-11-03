@@ -29,6 +29,9 @@ org.eclipse.jetty test-* war * * *
 org.eclipse.jetty.tests test-* war * * *
 org.eclipse.jetty.example-async-rest example-async-rest-webapp war * * *
 org.awaitility awaitility * * * *
+org.apache.directory.api api-ldap-model
+org.apache.directory.api api-util
+org.apache.directory.api api-asn1-api
 
 # Ignored modules
 org.eclipse.jetty infinispan-embedded
@@ -44,3 +47,8 @@ org.eclipse.jetty.gcloud jetty-gcloud-session-manager
 org.eclipse.jetty.memcached jetty-memcached-sessions
 
 org.junit junit-bom * * * *
+
+# Since 9.4.45
+
+org.infinispan infinispan-bom pom * * *
+org.testcontainers testcontainers-bom pom * * *

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -1013,7 +1013,6 @@ public class ConstraintTest
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("JSESSIONID=" + session));
 
         response = _connector.getResponse("GET /ctx/admin/info HTTP/1.0\r\n" +
             "Cookie: JSESSIONID=" + session + "\r\n" +
@@ -1862,6 +1861,44 @@ public class ConstraintTest
 
         response = _connector.getResponse("OPTIONS /ctx/some/constraint/info HTTP/1.0\r\n\r\n");
         assertThat(response, startsWith("HTTP/1.1 403 "));
+    }
+
+    @Test
+    public void testDefaultConstraint() throws Exception
+    {
+        _security.setAuthenticator(new BasicAuthenticator());
+
+        ConstraintMapping forbidDefault = new ConstraintMapping();
+        forbidDefault.setPathSpec("/");
+        forbidDefault.setConstraint(_forbidConstraint);
+        _security.addConstraintMapping(forbidDefault);
+
+        ConstraintMapping allowRoot = new ConstraintMapping();
+        allowRoot.setPathSpec("");
+        allowRoot.setConstraint(_relaxConstraint);
+        _security.addConstraintMapping(allowRoot);
+
+        _server.start();
+        String response;
+
+        response = _connector.getResponse("GET /ctx/ HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+
+        response = _connector.getResponse("GET /ctx/anything HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
+
+        response = _connector.getResponse("GET /ctx/noauth/info HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
+
+        response = _connector.getResponse("GET /ctx/forbid/info HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 403 Forbidden"));
+
+        response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 401 Unauthorized"));
+        assertThat(response, containsString("WWW-Authenticate: basic realm=\"TestRealm\""));
+
+        response = _connector.getResponse("GET /ctx/admin/relax/info HTTP/1.0\r\n\r\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
 
     private static String authBase64(String authorization)

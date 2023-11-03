@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -105,15 +105,25 @@ public interface LifeCycle
      */
     interface Listener extends EventListener
     {
-        void lifeCycleStarting(LifeCycle event);
+        default void lifeCycleStarting(LifeCycle event)
+        {
+        }
 
-        void lifeCycleStarted(LifeCycle event);
+        default void lifeCycleStarted(LifeCycle event)
+        {
+        }
 
-        void lifeCycleFailure(LifeCycle event, Throwable cause);
+        default void lifeCycleFailure(LifeCycle event, Throwable cause)
+        {
+        }
 
-        void lifeCycleStopping(LifeCycle event);
+        default void lifeCycleStopping(LifeCycle event)
+        {
+        }
 
-        void lifeCycleStopped(LifeCycle event);
+        default void lifeCycleStopped(LifeCycle event)
+        {
+        }
     }
 
     /**

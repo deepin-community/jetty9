@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>infinispan-parent</artifactId>
-    <version>9.4.44.v20210927</version>
+    <version>9.4.53.v20231009</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>infinispan-embedded</artifactId>
@@ -77,11 +77,6 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>infinispan-common</artifactId>
       <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.infinispan</groupId>
-      <artifactId>infinispan-core</artifactId>
-      <version>${infinispan.version}</version>
     </dependency>
   </dependencies>
 </project>

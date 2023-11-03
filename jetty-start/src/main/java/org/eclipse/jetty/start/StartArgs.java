@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -1503,6 +1503,7 @@ public class StartArgs
 
                 // ALPN feature exists
                 properties.setProperty("runtime.feature.alpn", Boolean.toString(isMethodAvailable(javax.net.ssl.SSLParameters.class, "getApplicationProtocols", null)), source);
+                properties.setProperty("at.least.java9", Boolean.toString(ver.getPlatform() >= 9), source);
             }
             catch (Throwable x)
             {

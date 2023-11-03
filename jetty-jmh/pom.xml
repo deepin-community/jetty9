@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.44.v20210927</version>
+    <version>9.4.53.v20231009</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -13,6 +13,7 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.jmh</bundle-symbolic-name>
     <spotbugs.skip>true</spotbugs.skip>
+    <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
 
   <build>
@@ -61,10 +62,16 @@
       <plugins>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-deploy-plugin</artifactId>
+          <artifactId>maven-jar-plugin</artifactId>
           <configuration>
-            <!-- No point deploying jmh project -->
-            <skip>true</skip>
+            <archive>
+              <manifest>
+                <addDefaultEntries/>
+              </manifest>
+              <manifestEntries>
+                <Comment>Jetty Jmh Support Classes</Comment>
+              </manifestEntries>
+            </archive>
           </configuration>
         </plugin>
       </plugins>

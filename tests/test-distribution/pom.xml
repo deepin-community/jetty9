@@ -2,7 +2,7 @@
   <parent>
     <artifactId>tests-parent</artifactId>
     <groupId>org.eclipse.jetty.tests</groupId>
-    <version>9.4.44.v20210927</version>
+    <version>9.4.53.v20231009</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -18,6 +18,17 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.plexus</groupId>
+      <artifactId>plexus-xml</artifactId>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.annotation</groupId>
+          <artifactId>javax.annotation-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -42,6 +53,18 @@
       <groupId>org.apache.maven.resolver</groupId>
       <artifactId>maven-resolver-api</artifactId>
       <version>${maven.resolver.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.resolver</groupId>
+      <artifactId>maven-resolver-impl</artifactId>
+      <version>${maven.resolver.version}</version>
+      <exclusions>
+        <!-- Used when running in SISU container to manage beans lifecycle (of locking factories) -->
+        <exclusion>
+          <groupId>javax.annotation</groupId>
+          <artifactId>javax.annotation-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
@@ -151,8 +174,40 @@
       <type>war</type>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>infinispan-remote-query</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>mariadb</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>gcloud</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>mongodb</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mariadb.jdbc</groupId>
+      <artifactId>mariadb-java-client</artifactId>
+      <version>${maria.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -168,6 +223,9 @@
             <jettyVersion>${project.version}</jettyVersion>
             <hazelcast.version>${hazelcast.version}</hazelcast.version>
             <distribution.debug.port>$(distribution.debug.port}</distribution.debug.port>
+            <home.start.timeout>${home.start.timeout}</home.start.timeout>
+            <mariadb.version>${mariadb.version}</mariadb.version>
+            <sessionLogLevel>${sessionLogLevel}</sessionLogLevel>
           </systemPropertyVariables>
         </configuration>
       </plugin>

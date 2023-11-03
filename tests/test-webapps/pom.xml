@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>9.4.44.v20210927</version>
+    <version>9.4.53.v20231009</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-webapps-parent</artifactId>
@@ -12,14 +12,6 @@
   <packaging>pom</packaging>
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- DO NOT DEPLOY (or Release) -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>

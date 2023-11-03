@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,10 +19,17 @@
 package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -30,15 +37,19 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TrieTest
 {
     public static Stream<Arguments> implementations()
     {
-        List<Trie> impls = new ArrayList<>();
+        List<Trie<Integer>> impls = new ArrayList<>();
 
         impls.add(new ArrayTrie<Integer>(128));
         impls.add(new TreeTrie<Integer>());
@@ -60,6 +71,15 @@ public class TrieTest
         return impls.stream().map(Arguments::of);
     }
 
+    public static Stream<Arguments> trieConstructors()
+    {
+        List<Function<Integer, Trie<?>>> tries = new ArrayList<>();
+        tries.add(ArrayTrie::new);
+        tries.add(ArrayTernaryTrie::new);
+        tries.add(capacity -> new ArrayTernaryTrie.Growing<>(capacity, capacity));
+        return tries.stream().map(Arguments::of);
+    }
+
     @ParameterizedTest
     @MethodSource("implementations")
     public void testOverflow(Trie<Integer> trie) throws Exception
@@ -72,11 +92,34 @@ public class TrieTest
             if (!trie.put("prefix" + i, i))
             {
                 assertTrue(trie.isFull());
+                String key = "prefix" + i;
+
+                // Assert that all keys can be gotten.
+                for (String k : trie.keySet())
+                {
+                    assertNotNull(trie.get(k));
+                    assertNotNull(trie.get(toAsciiDirectByteBuffer(k, 0))); // has to be a direct buffer
+                    assertEquals(9, trie.get(toAsciiDirectByteBuffer(k, k.length()))); // has to be a direct buffer
+                }
+
+                // Assert that all getBest() variants do work on full tries.
+                assertNotNull(trie.getBest(key), "key=" + key);
+                assertNotNull(trie.getBest(key.getBytes(StandardCharsets.US_ASCII), 0, key.length()), "key=" + key);
+                assertNotNull(trie.getBest(toAsciiDirectByteBuffer(key, 0), 0, key.length()), "key=" + key); // has to be a direct buffer
+                assertNull(trie.getBest(toAsciiDirectByteBuffer(key, key.length()), 0, key.length()), "key=" + key);  // has to be a direct buffer
                 break;
             }
         }
 
         assertTrue(!trie.isFull() || !trie.put("overflow", 0));
+    }
+
+    private static ByteBuffer toAsciiDirectByteBuffer(String s, int pos)
+    {
+        ByteBuffer bb = ByteBuffer.allocateDirect(s.length());
+        bb.put(s.getBytes(StandardCharsets.US_ASCII));
+        bb.position(pos);
+        return bb;
     }
 
     @ParameterizedTest
@@ -249,5 +292,143 @@ public class TrieTest
         testGetString(trie);
         testGetBestArray(trie);
         testGetBestBuffer(trie);
+    }
+
+    @ParameterizedTest
+    @MethodSource("trieConstructors")
+    public void testTrieCapacityOverflow(Function<Integer, Trie<?>> constructor)
+    {
+        assertThrows(IllegalArgumentException.class, () -> constructor.apply((int)Character.MAX_VALUE));
+    }
+
+    @ParameterizedTest
+    @MethodSource("trieConstructors")
+    public void testTrieCapacity(Function<Integer, Trie<String>> constructor)
+    {
+        Trie<String> trie = constructor.apply(Character.MAX_VALUE - 1);
+
+        char[] c1 = new char[Character.MAX_VALUE - 1];
+        Arrays.fill(c1, 'a');
+        String huge = new String(c1);
+        assertTrue(trie.put(huge, "wow"));
+        assertThat(trie.get(huge), is("wow"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("trieConstructors")
+    public void testTrieOverflowReject(Function<Integer, Trie<String>> constructor)
+    {
+        Trie<String> trie = constructor.apply(Character.MAX_VALUE - 1);
+        assertTrue(trie.put("X", "/"));
+        assertThat(trie.getBest("X", 0, 1), is("/"));
+
+        char[] c1 = new char[Character.MAX_VALUE - 1];
+        Arrays.fill(c1, 'a');
+        String huge = new String(c1);
+        assertFalse(trie.put(huge, "overflow"));
+        assertNull(trie.get(huge));
+
+        // The previous entry was not overridden
+        assertThat(trie.getBest("X", 0, 1), is("/"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("trieConstructors")
+    public void testHttp(Function<Integer, Trie<String>> constructor)
+    {
+        Trie<String> trie = constructor.apply(500);
+        trie.put("Host:", "H");
+        trie.put("Host: name", "HF");
+
+        assertThat(trie.getBest("Other: header\r\n"), nullValue());
+        assertThat(trie.getBest("Host: other\r\n"), is("H"));
+        assertThat(trie.getBest("Host: name\r\n"), is("HF"));
+        assertThat(trie.getBest("HoSt: nAme\r\n"), is("HF"));
+
+        assertThat(trie.getBest(BufferUtil.toBuffer("Other: header\r\n")), nullValue());
+        assertThat(trie.getBest(BufferUtil.toBuffer("Host: other\r\n")), is("H"));
+        assertThat(trie.getBest(BufferUtil.toBuffer("Host: name\r\n")), is("HF"));
+        assertThat(trie.getBest(BufferUtil.toBuffer("HoSt: nAme\r\n")), is("HF"));
+
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("Other: header\r\n")), nullValue());
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("Host: other\r\n")), is("H"));
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("Host: name\r\n")), is("HF"));
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("HoSt: nAme\r\n")), is("HF"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("trieConstructors")
+    public void testEmptyKey(Function<Integer, Trie<String>> constructor)
+    {
+        Trie<String> trie = constructor.apply(500);
+        assertTrue(trie.put("", "empty"));
+        assertTrue(trie.put("abc", "prefixed"));
+
+        assertThat(trie.getBest("unknown"), is("empty"));
+        assertThat(trie.getBest("a"), is("empty"));
+        assertThat(trie.getBest("aX"), is("empty"));
+        assertThat(trie.getBest("abc"), is("prefixed"));
+        assertThat(trie.getBest("abcd"), is("prefixed"));
+
+        assertThat(trie.getBest(BufferUtil.toBuffer("unknown")), is("empty"));
+        assertThat(trie.getBest(BufferUtil.toBuffer("a")), is("empty"));
+        assertThat(trie.getBest(BufferUtil.toBuffer("aX")), is("empty"));
+        assertThat(trie.getBest(BufferUtil.toBuffer("abc")), is("prefixed"));
+        assertThat(trie.getBest(BufferUtil.toBuffer("abcd")), is("prefixed"));
+
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("unknown")), is("empty"));
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("a")), is("empty"));
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("aX")), is("empty"));
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("abc")), is("prefixed"));
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("abcd")), is("prefixed"));
+    }
+
+    @Test
+    public void testArrayTernaryTrieSize()
+    {
+        ArrayTernaryTrie<String> trie = new ArrayTernaryTrie<>();
+
+        assertTrue(trie.put("abc", "X"));
+        assertTrue(trie.put("def", "Y"));
+        assertTrue(trie.put("dee", "Z"));
+
+        assertEquals(3, trie.size());
+    }
+
+    @Test
+    public void testArrayTernaryTrieKeySet()
+    {
+        ArrayTernaryTrie<String> trie = new ArrayTernaryTrie<>();
+
+        assertTrue(trie.put("abc", "X"));
+        assertTrue(trie.put("def", "Y"));
+        assertTrue(trie.put("dee", "Z"));
+
+        Set<String> keys = trie.keySet();
+        assertEquals(3, keys.size());
+        assertTrue(keys.contains("abc"));
+        assertTrue(keys.contains("def"));
+        assertTrue(keys.contains("dee"));
+    }
+
+    @Test
+    public void testArrayTernaryTrieEntrySet()
+    {
+        ArrayTernaryTrie<String> trie = new ArrayTernaryTrie<>();
+
+        assertTrue(trie.put("abc", "X"));
+        assertTrue(trie.put("def", "Y"));
+        assertTrue(trie.put("dee", "Z"));
+
+        Set<Map.Entry<String, String>> entries = trie.entrySet();
+        assertEquals(3, entries.size());
+        Set<String> keys = entries.stream().map(Map.Entry::getKey).collect(Collectors.toSet());
+        assertTrue(keys.contains("abc"));
+        assertTrue(keys.contains("def"));
+        assertTrue(keys.contains("dee"));
+        Set<String> values = entries.stream().map(Map.Entry::getValue).collect(Collectors.toSet());
+        assertTrue(values.contains("X"));
+        assertTrue(values.contains("Y"));
+        assertTrue(values.contains("Z"));
     }
 }

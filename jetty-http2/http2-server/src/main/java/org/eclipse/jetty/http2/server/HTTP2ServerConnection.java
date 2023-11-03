@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -89,9 +89,15 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private final HttpConfiguration httpConfig;
     private boolean recycleHttpChannels = true;
 
+    @Deprecated
     public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {
-        super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize);
+        this(byteBufferPool, executor, endPoint, httpConfig, session, inputBufferSize, listener);
+    }
+
+    public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ISession session, int inputBufferSize, ServerSessionListener listener)
+    {
+        super(byteBufferPool, executor, endPoint, session, inputBufferSize);
         this.listener = listener;
         this.httpConfig = httpConfig;
     }
