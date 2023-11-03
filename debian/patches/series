@@ -5,3 +5,4 @@
 07-assembly-plugin-configuration.patch
 08-ignore-jetty-test-policy.patch
 09-tweak-distribution.patch
+servlet-api.patch

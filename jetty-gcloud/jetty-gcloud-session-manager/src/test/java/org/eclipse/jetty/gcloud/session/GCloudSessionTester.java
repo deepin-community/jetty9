@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,8 +19,8 @@
 package org.eclipse.jetty.gcloud.session;
 
 import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -47,7 +47,7 @@ public class GCloudSessionTester
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
         webapp.setWar("../../jetty-distribution/target/distribution/demo-base/webapps/test.war");
-        webapp.addAliasCheck(new AllowSymLinkAliasChecker());
+        webapp.addAliasCheck(new AllowedResourceAliasChecker(webapp));
         GCloudSessionDataStore ds = new GCloudSessionDataStore();
 
         DefaultSessionCache ss = new DefaultSessionCache(webapp.getSessionHandler());

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
@@ -113,7 +114,10 @@ public class ContextHandlerGetResourceTest
         context.setBaseResource(Resource.newResource(docroot));
         context.addAliasCheck(new ContextHandler.AliasCheck()
         {
-            final AllowSymLinkAliasChecker symlinkcheck = new AllowSymLinkAliasChecker();
+            final SymlinkAllowedResourceAliasChecker symlinkcheck = new SymlinkAllowedResourceAliasChecker(context);
+            {
+                context.addBean(symlinkcheck);
+            }
 
             @Override
             public boolean check(String path, Resource resource)

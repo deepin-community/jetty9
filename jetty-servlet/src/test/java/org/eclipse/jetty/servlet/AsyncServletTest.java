@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -73,7 +73,6 @@ public class AsyncServletTest
     protected int _port;
 
     protected Server _server = new Server();
-    protected ServletHandler _servletHandler;
     protected ErrorPageErrorHandler _errorHandler;
     protected ServerConnector _connector;
     protected List<String> _log;
@@ -109,18 +108,17 @@ public class AsyncServletTest
         context.setErrorHandler(_errorHandler);
         _errorHandler.addErrorPage(300, 599, "/error/custom");
 
-        _servletHandler = context.getServletHandler();
         ServletHolder holder = new ServletHolder(_servlet);
         holder.setAsyncSupported(true);
-        _servletHandler.addServletWithMapping(holder, "/error/*");
-        _servletHandler.addServletWithMapping(holder, "/path/*");
-        _servletHandler.addServletWithMapping(holder, "/path1/*");
-        _servletHandler.addServletWithMapping(holder, "/path2/*");
-        _servletHandler.addServletWithMapping(holder, "/p th3/*");
-        _servletHandler.addServletWithMapping(new ServletHolder(new FwdServlet()), "/fwd/*");
+        context.addServlet(holder, "/error/*");
+        context.addServlet(holder, "/path/*");
+        context.addServlet(holder, "/path1/*");
+        context.addServlet(holder, "/path2/*");
+        context.addServlet(holder, "/p th3/*");
+        context.addServlet(new ServletHolder(new FwdServlet()), "/fwd/*");
         ServletHolder holder2 = new ServletHolder("NoAsync", _servlet);
         holder2.setAsyncSupported(false);
-        _servletHandler.addServletWithMapping(holder2, "/noasync/*");
+        context.addServlet(holder2, "/noasync/*");
         _server.start();
         _port = _connector.getLocalPort();
         __history.clear();

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -91,6 +91,8 @@ public class ProxyWebAppTest
         // this proxy configuration, not redirected to the actual website.
         assertThat("response status", response.getStatus(), is(HttpStatus.OK_200));
         // Expecting a Javadoc / APIDoc response - look for something unique for APIdoc.
-        assertThat("response", response.getContentAsString(), containsString("All&nbsp;Classes"));
+        String body = response.getContentAsString();
+        assertThat(body, containsString("All&nbsp;Classes"));
+        assertThat(body, containsString("<title>Overview (Jetty :: Project 9."));
     }
 }

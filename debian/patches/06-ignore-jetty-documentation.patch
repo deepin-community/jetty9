@@ -1,9 +1,16 @@
-Description: Ignore the documentation module (removed from the upstream tarball to save some space)
-Author: Emmanuel Bourg <ebourg@apache.org>
+From: Emmanuel Bourg <ebourg@apache.org>
+Date: Sat, 25 Dec 2021 23:34:46 +0100
+Subject: Ignore the documentation module (removed from the upstream tarball
+ to save some space)
+
 Forwarded: not-needed
+---
+ pom.xml | 1 -
+ 1 file changed, 1 deletion(-)
+
 --- a/pom.xml
 +++ b/pom.xml
-@@ -201,7 +201,6 @@
+@@ -222,7 +222,6 @@
      <module>jetty-alpn</module>
      <module>jetty-home</module>
      <module>jetty-bom</module>

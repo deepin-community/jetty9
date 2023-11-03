@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,15 +35,21 @@ public class Generator
 
     public Generator(ByteBufferPool byteBufferPool)
     {
-        this(byteBufferPool, 4096, 0);
+        this(byteBufferPool, 0);
     }
 
+    @Deprecated
     public Generator(ByteBufferPool byteBufferPool, int maxDynamicTableSize, int maxHeaderBlockFragment)
+    {
+        this(byteBufferPool, maxHeaderBlockFragment);
+    }
+
+    public Generator(ByteBufferPool byteBufferPool, int maxHeaderBlockFragment)
     {
         this.byteBufferPool = byteBufferPool;
 
         headerGenerator = new HeaderGenerator();
-        hpackEncoder = new HpackEncoder(maxDynamicTableSize);
+        hpackEncoder = new HpackEncoder();
 
         this.generators = new FrameGenerator[FrameType.values().length];
         this.generators[FrameType.HEADERS.getType()] = new HeadersGenerator(headerGenerator, hpackEncoder, maxHeaderBlockFragment);
@@ -66,14 +72,21 @@ public class Generator
         return byteBufferPool;
     }
 
-    public void setValidateHpackEncoding(boolean validateEncoding)
+    public HpackEncoder getHpackEncoder()
     {
-        hpackEncoder.setValidateEncoding(validateEncoding);
+        return hpackEncoder;
     }
 
-    public void setHeaderTableSize(int headerTableSize)
+    @Deprecated
+    public void setValidateHpackEncoding(boolean validateEncoding)
     {
-        hpackEncoder.setRemoteMaxDynamicTableSize(headerTableSize);
+        getHpackEncoder().setValidateEncoding(validateEncoding);
+    }
+
+    @Deprecated
+    public void setHeaderTableSize(int maxTableSize)
+    {
+        getHpackEncoder().setTableCapacity(maxTableSize);
     }
 
     public void setMaxFrameSize(int maxFrameSize)
@@ -91,8 +104,9 @@ public class Generator
         return dataGenerator.generate(lease, frame, maxLength);
     }
 
+    @Deprecated
     public void setMaxHeaderListSize(int value)
     {
-        hpackEncoder.setMaxHeaderListSize(value);
+        getHpackEncoder().setMaxHeaderListSize(value);
     }
 }

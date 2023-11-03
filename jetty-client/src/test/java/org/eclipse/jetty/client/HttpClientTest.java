@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -103,6 +103,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -536,6 +537,41 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
             assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testRetryWithDestinationIdleTimeoutEnabled(Scenario scenario) throws Exception
+    {
+        start(scenario, new EmptyServerHandler());
+        client.stop();
+        client.setDestinationIdleTimeout(1000);
+        client.setIdleTimeout(1000);
+        client.setMaxConnectionsPerDestination(1);
+        client.start();
+
+        try (StacklessLogging ignored = new StacklessLogging(org.eclipse.jetty.server.HttpChannel.class))
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .path("/one")
+                .send();
+
+            int idleTimeout = 100;
+            Thread.sleep(idleTimeout * 2);
+
+            // After serving a request over a connection that hasn't timed out, serving a second
+            // request with a shorter idle timeout will make the connection timeout immediately
+            // after being taken out of the pool. This triggers the retry mechanism.
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .path("/two")
+                .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
+                .send();
+        }
+
+        // Wait for the sweeper to remove the idle HttpDestination.
+        await().atMost(5, TimeUnit.SECONDS).until(() -> client.getDestinations().isEmpty());
     }
 
     @ParameterizedTest
@@ -1606,8 +1642,18 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
                 ContentResponse response = listener.get(5, TimeUnit.SECONDS);
                 assertEquals(200, response.getStatus());
+                assertThat(connection, Matchers.instanceOf(HttpConnectionOverHTTP.class));
+                HttpConnectionOverHTTP httpConnection = (HttpConnectionOverHTTP)connection;
+                EndPoint endPoint = httpConnection.getEndPoint();
+                assertTrue(endPoint.isOpen());
 
-                // Test that I can send another request on the same connection.
+                // After a CONNECT+200, this connection is in "tunnel mode",
+                // and applications that want to deal with tunnel bytes must
+                // likely access the underlying EndPoint.
+                // For the purpose of this test, we just re-enable fill interest
+                // so that we can send another clear-text HTTP request.
+                httpConnection.fillInterested();
+
                 request = client.newRequest(host, port);
                 listener = new FutureResponseListener(request);
                 connection.send(request, listener);

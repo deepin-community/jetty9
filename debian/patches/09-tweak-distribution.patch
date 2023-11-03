@@ -1,6 +1,70 @@
-Description: Remove optional content from the distribution (documentation, sources, test files, examples)
-Author: Emmanuel Bourg <ebourg@apache.org>
+From: Emmanuel Bourg <ebourg@apache.org>
+Date: Sat, 25 Dec 2021 23:34:46 +0100
+Subject: Remove optional content from the distribution (documentation,
+ sources, test files, examples)
+
 Forwarded: not-needed
+---
+ jetty-distribution/pom.xml | 12 ++++++------
+ jetty-home/pom.xml         | 20 ++++++--------------
+ 2 files changed, 12 insertions(+), 20 deletions(-)
+
+--- a/jetty-distribution/pom.xml
++++ b/jetty-distribution/pom.xml
+@@ -75,7 +75,7 @@
+           </execution>
+           <execution>
+             <id>copy</id>
+-            <phase>prepare-package</phase>
++            <phase>none</phase>
+             <goals>
+               <goal>copy</goal>
+             </goals>
+@@ -147,7 +147,7 @@
+ 
+           <execution>
+             <id>unpack-test-webapp-config</id>
+-            <phase>prepare-package</phase>
++            <phase>none</phase>
+             <goals>
+               <goal>unpack</goal>
+             </goals>
+@@ -169,7 +169,7 @@
+ 
+           <execution>
+             <id>unpack-test-jaas-config</id>
+-            <phase>prepare-package</phase>
++            <phase>none</phase>
+             <goals>
+               <goal>unpack</goal>
+             </goals>
+@@ -191,7 +191,7 @@
+ 
+           <execution>
+             <id>unpack-test-jndi-config</id>
+-            <phase>prepare-package</phase>
++            <phase>none</phase>
+             <goals>
+               <goal>unpack</goal>
+             </goals>
+@@ -213,7 +213,7 @@
+ 
+           <execution>
+             <id>unpack-test-spec-config</id>
+-            <phase>prepare-package</phase>
++            <phase>none</phase>
+             <goals>
+               <goal>unpack</goal>
+             </goals>
+@@ -234,7 +234,7 @@
+           </execution>
+           <execution>
+             <id>unpack-documentation</id>
+-            <phase>prepare-package</phase>
++            <phase>none</phase>
+             <goals>
+               <goal>unpack</goal>
+             </goals>
 --- a/jetty-home/pom.xml
 +++ b/jetty-home/pom.xml
 @@ -80,16 +80,6 @@
@@ -68,60 +132,4 @@ Forwarded: not-needed
 +            <phase>none</phase>
              <goals>
                <goal>single</goal>
-             </goals>
---- a/jetty-distribution/pom.xml
-+++ b/jetty-distribution/pom.xml
-@@ -75,7 +75,7 @@
-           </execution>
-           <execution>
-             <id>copy</id>
--            <phase>prepare-package</phase>
-+            <phase>none</phase>
-             <goals>
-               <goal>copy</goal>
-             </goals>
-@@ -147,7 +147,7 @@
- 
-           <execution>
-             <id>unpack-test-webapp-config</id>
--            <phase>prepare-package</phase>
-+            <phase>none</phase>
-             <goals>
-               <goal>unpack</goal>
-             </goals>
-@@ -169,7 +169,7 @@
- 
-           <execution>
-             <id>unpack-test-jaas-config</id>
--            <phase>prepare-package</phase>
-+            <phase>none</phase>
-             <goals>
-               <goal>unpack</goal>
-             </goals>
-@@ -191,7 +191,7 @@
- 
-           <execution>
-             <id>unpack-test-jndi-config</id>
--            <phase>prepare-package</phase>
-+            <phase>none</phase>
-             <goals>
-               <goal>unpack</goal>
-             </goals>
-@@ -213,7 +213,7 @@
- 
-           <execution>
-             <id>unpack-test-spec-config</id>
--            <phase>prepare-package</phase>
-+            <phase>none</phase>
-             <goals>
-               <goal>unpack</goal>
-             </goals>
-@@ -234,7 +234,7 @@
-           </execution>
-           <execution>
-             <id>unpack-documentation</id>
--            <phase>prepare-package</phase>
-+            <phase>none</phase>
-             <goals>
-               <goal>unpack</goal>
              </goals>

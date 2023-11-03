@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -297,10 +297,10 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         InputStreamResponseListener listener = new InputStreamResponseListener();
         client.newRequest("localhost", connector.getLocalPort())
             .scheme(scenario.getScheme())
-            .timeout(5, TimeUnit.SECONDS)
+            .timeout(15, TimeUnit.SECONDS)
             .send(listener);
 
-        Response response = listener.get(5, TimeUnit.SECONDS);
+        Response response = listener.get(15, TimeUnit.SECONDS);
         assertEquals(HttpStatus.OK_200, response.getStatus());
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();

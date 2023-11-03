@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,8 +37,10 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
@@ -51,8 +53,10 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpComplianceSection;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Connection;
@@ -81,6 +85,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -136,6 +141,7 @@ public class RequestTest
         http.getHttpConfiguration().setRequestHeaderSize(512);
         http.getHttpConfiguration().setResponseHeaderSize(512);
         http.getHttpConfiguration().setOutputBufferSize(2048);
+        http.getHttpConfiguration().setRequestCookieCompliance(CookieCompliance.RFC6265_LEGACY);
         http.getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
         _connector = new LocalConnector(_server, http);
         _server.addConnector(_connector);
@@ -190,6 +196,64 @@ public class RequestTest
 
         String responses = _connector.getResponse(request);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
+    }
+
+    @Test
+    public void testParameterExtractionKeepOrderingIntact() throws Exception
+    {
+        AtomicReference<Map<String, String[]>> reference = new AtomicReference<>();
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request, HttpServletResponse response)
+            {
+                reference.set(request.getParameterMap());
+                return true;
+            }
+        };
+
+        String request = "POST /?first=1&second=2&third=3&fourth=4 HTTP/1.1\r\n" +
+            "Host: whatever\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\n" +
+            "Connection: close\n" +
+            "Content-Length: 34\n" +
+            "\n" +
+            "fifth=5&sixth=6&seventh=7&eighth=8";
+
+        String responses = _connector.getResponse(request);
+        assertTrue(responses.startsWith("HTTP/1.1 200"));
+        assertThat(new ArrayList<>(reference.get().keySet()), is(Arrays.asList("first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth")));
+    }
+
+    @Test
+    public void testParameterExtractionOrderingWithMerge() throws Exception
+    {
+        AtomicReference<Map<String, String[]>> reference = new AtomicReference<>();
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request, HttpServletResponse response)
+            {
+                reference.set(request.getParameterMap());
+                return true;
+            }
+        };
+
+        String request = "POST /?a=1&b=2&c=3&a=4 HTTP/1.1\r\n" +
+            "Host: whatever\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\n" +
+            "Connection: close\n" +
+            "Content-Length: 11\n" +
+            "\n" +
+            "c=5&b=6&a=7";
+
+        String responses = _connector.getResponse(request);
+        Map<String, String[]> returnedMap = reference.get();
+        assertTrue(responses.startsWith("HTTP/1.1 200"));
+        assertThat(new ArrayList<>(returnedMap.keySet()), is(Arrays.asList("a", "b", "c")));
+        assertTrue(Arrays.equals(returnedMap.get("a"), new String[]{"1", "4", "7"}));
+        assertTrue(Arrays.equals(returnedMap.get("b"), new String[]{"2", "6"}));
+        assertTrue(Arrays.equals(returnedMap.get("c"), new String[]{"3", "5"}));
     }
 
     @Test
@@ -810,6 +874,52 @@ public class RequestTest
 
         assertTrue(results.get(i++).startsWith("text/html"));
         assertEquals(" x=z; ", results.get(i++));
+    }
+
+    @Test
+    public void testConnectRequestURLSameAsHost() throws Exception
+    {
+        final AtomicReference<String> resultRequestURL = new AtomicReference<>();
+        final AtomicReference<String> resultRequestURI = new AtomicReference<>();
+        _handler._checker = (request, response) ->
+        {
+            resultRequestURL.set(request.getRequestURL().toString());
+            resultRequestURI.set(request.getRequestURI());
+            return true;
+        };
+
+        String rawResponse = _connector.getResponse(
+            "CONNECT myhost:9999 HTTP/1.1\n" +
+                "Host: myhost:9999\n" +
+                "Connection: close\n" +
+                "\n");
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat("request.getRequestURL", resultRequestURL.get(), is("http://myhost:9999"));
+        assertThat("request.getRequestURI", resultRequestURI.get(), is(nullValue()));
+    }
+
+    @Test
+    public void testConnectRequestURLDifferentThanHost() throws Exception
+    {
+        final AtomicReference<String> resultRequestURL = new AtomicReference<>();
+        final AtomicReference<String> resultRequestURI = new AtomicReference<>();
+        _handler._checker = (request, response) ->
+        {
+            resultRequestURL.set(request.getRequestURL().toString());
+            resultRequestURI.set(request.getRequestURI());
+            return true;
+        };
+
+        String rawResponse = _connector.getResponse(
+            "CONNECT myhost:9999 HTTP/1.1\n" +
+                "Host: otherhost:8888\n" + // per spec, this is ignored if request-target is authority-form
+                "Connection: close\n" +
+                "\n");
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat("request.getRequestURL", resultRequestURL.get(), is("http://myhost:9999"));
+        assertThat("request.getRequestURI", resultRequestURI.get(), is(nullValue()));
     }
 
     @Test
@@ -1947,13 +2057,14 @@ public class RequestTest
     @Test
     public void testAmbiguousPaths() throws Exception
     {
+        // TODO this is a poor test as it is not very exhaustive.  See HttpURITest for better tests.
         _handler._checker = (request, response) ->
         {
             response.getOutputStream().println("servletPath=" + request.getServletPath());
             response.getOutputStream().println("pathInfo=" + request.getPathInfo());
             return true;
         };
-        String request = "GET /unnormal/.././path/ambiguous%2f%2e%2e/%2e;/info HTTP/1.0\r\n" +
+        String request = "GET /unnormal/.././path/ambiguous%2f%2e%2e/info HTTP/1.0\r\n" +
             "Host: whatever\r\n" +
             "\r\n";
 
@@ -1962,7 +2073,7 @@ public class RequestTest
             startsWith("HTTP/1.1 200"),
             containsString("pathInfo=/path/info")));
 
-        setComplianceModes(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS);
+        setComplianceModes(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEPARATORS);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
     }
 

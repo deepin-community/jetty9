@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -67,7 +67,10 @@ import org.eclipse.jetty.util.log.Logger;
  * <dt>ignoreExitState</dt>
  * <dd>If true then do not act on a non-zero exec exit status")</dd>
  * </dl>
+ *
+ * @deprecated do not use, no replacement, will be removed in a future release.
  */
+@Deprecated
 public class CGI extends HttpServlet
 {
     private static final long serialVersionUID = -6182088932884791074L;

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -143,6 +143,13 @@ public class JsrCreator implements WebSocketCreator
             String requestPath = req.getRequestPath();
             // Wrap the config with the path spec information
             config = new PathParamServerEndpointConfig(containerScope, config, wspathSpec, requestPath);
+        }
+        else
+        {
+            // This is for the programmatic websocket upgrade.
+            Map<String, String> pathParams = jsrHandshakeRequest.getPathParams();
+            if (pathParams != null)
+                config = new PathParamServerEndpointConfig(containerScope, config, pathParams);
         }
 
         // [JSR] Step 5: Call modifyHandshake

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -39,9 +40,16 @@ public class HTTP2ClientSession extends HTTP2Session
 {
     private static final Logger LOG = Log.getLogger(HTTP2ClientSession.class);
 
+    @Deprecated
     public HTTP2ClientSession(Scheduler scheduler, EndPoint endPoint, Generator generator, Session.Listener listener, FlowControlStrategy flowControl)
     {
-        super(scheduler, endPoint, generator, listener, flowControl, 1);
+        this(scheduler, endPoint, null, generator, listener, flowControl);
+        throw new UnsupportedOperationException();
+    }
+
+    public HTTP2ClientSession(Scheduler scheduler, EndPoint endPoint, Parser parser, Generator generator, Session.Listener listener, FlowControlStrategy flowControl)
+    {
+        super(scheduler, endPoint, parser, generator, listener, flowControl, 1);
     }
 
     @Override
@@ -63,9 +71,10 @@ public class HTTP2ClientSession extends HTTP2Session
             else
             {
                 stream.process(frame, Callback.NOOP);
-                if (stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
-                    removeStream(stream);
+                boolean closed = stream.updateClose(frame.isEndStream(), CloseState.Event.RECEIVED);
                 notifyHeaders(stream, frame);
+                if (closed)
+                    removeStream(stream);
             }
         }
         else

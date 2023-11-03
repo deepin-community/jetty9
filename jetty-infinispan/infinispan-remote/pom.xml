@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>infinispan-parent</artifactId>
-    <version>9.4.44.v20210927</version>
+    <version>9.4.53.v20231009</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>infinispan-remote</artifactId>
@@ -81,13 +81,22 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-client-hotrod</artifactId>
-      <version>${infinispan.version}</version>
       <scope>provided</scope>
+      <exclusions>
+        <!-- this is depending on an old log4j version which have this issue https://issues.apache.org/jira/browse/LOG4J2-3241 -->
+        <exclusion>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.jboss.logging</groupId>
+          <artifactId>jboss-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-remote-query-client</artifactId>
-      <version>${infinispan.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -95,6 +104,12 @@
       <artifactId>protostream</artifactId>
       <version>${infinispan.protostream.version}</version>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.jboss.logging</groupId>
+          <artifactId>jboss-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 </project>

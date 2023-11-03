@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -46,11 +46,15 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.compression.DeflaterPool;
+import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -85,6 +89,8 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 public class WebSocketServerFactory extends ContainerLifeCycle implements WebSocketCreator, WebSocketContainerScope, WebSocketServletFactory
 {
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
+    private static final String WEBSOCKET_INFLATER_POOL_ATTRIBUTE = "jetty.websocket.inflater";
+    private static final String WEBSOCKET_DEFLATER_POOL_ATTRIBUTE = "jetty.websocket.deflater";
 
     private final ClassLoader contextClassloader;
     private final Map<Integer, WebSocketHandshake> handshakes = new HashMap<>();
@@ -114,7 +120,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
     public WebSocketServerFactory(ServletContext context)
     {
-        this(context, WebSocketPolicy.newServerPolicy(), new MappedByteBufferPool());
+        this(context, WebSocketPolicy.newServerPolicy(), null);
     }
 
     public WebSocketServerFactory(ServletContext context, ByteBufferPool bufferPool)
@@ -130,7 +136,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      */
     public WebSocketServerFactory(ServletContext context, WebSocketPolicy policy)
     {
-        this(context, policy, new MappedByteBufferPool());
+        this(context, policy, null);
     }
 
     public WebSocketServerFactory(ServletContext context, WebSocketPolicy policy, ByteBufferPool bufferPool)
@@ -156,23 +162,63 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         this.defaultPolicy = policy;
         this.objectFactory = objectFactory;
         this.executor = executor;
-        this.bufferPool = bufferPool;
 
         this.creator = this;
         this.contextClassloader = Thread.currentThread().getContextClassLoader();
         this.eventDriverFactory = new EventDriverFactory(this);
-        this.extensionFactory = new WebSocketExtensionFactory(this);
+
+        if (context == null)
+        {
+            this.extensionFactory = new WebSocketExtensionFactory(this);
+        }
+        else
+        {
+            // Look for CompressionPools in context attributes, if null try get shared CompressionPools from the server.
+            DeflaterPool deflaterPool = (DeflaterPool)context.getAttribute(WEBSOCKET_DEFLATER_POOL_ATTRIBUTE);
+            InflaterPool inflaterPool = (InflaterPool)context.getAttribute(WEBSOCKET_INFLATER_POOL_ATTRIBUTE);
+            ContextHandler contextHandler = ContextHandler.getContextHandler(context);
+            Server server = (contextHandler == null) ? null : contextHandler.getServer();
+            if (server != null)
+            {
+                if (deflaterPool == null)
+                    deflaterPool = DeflaterPool.ensurePool(server);
+                if (inflaterPool == null)
+                    inflaterPool = InflaterPool.ensurePool(server);
+            }
+            this.extensionFactory = new WebSocketExtensionFactory(this, inflaterPool, deflaterPool);
+
+            // These pools may be managed by the server but not yet started.
+            // In this case we don't want them to be managed by the extensionFactory as well.
+            if (server != null)
+            {
+                if (server.contains(inflaterPool))
+                    extensionFactory.unmanage(inflaterPool);
+                if (server.contains(deflaterPool))
+                    extensionFactory.unmanage(deflaterPool);
+            }
+        }
 
         this.handshakes.put(HandshakeRFC6455.VERSION, new HandshakeRFC6455());
         this.sessionFactories.add(new WebSocketSessionFactory(this));
 
-        // Create supportedVersions
-        List<Integer> versions = new ArrayList<>();
-        for (int v : handshakes.keySet())
+        if (bufferPool == null)
         {
-            versions.add(v);
+            ContextHandler contextHandler = ServletContextHandler.getContextHandler(context);
+            if (contextHandler != null)
+            {
+                Server server = contextHandler.getServer();
+                if (server != null)
+                    bufferPool = server.getBean(ByteBufferPool.class);
+            }
+            if (bufferPool == null)
+                bufferPool = new MappedByteBufferPool();
         }
-        Collections.sort(versions, Collections.reverseOrder()); // newest first
+        this.bufferPool = bufferPool;
+        addBean(bufferPool);
+
+        // Create supportedVersions
+        List<Integer> versions = new ArrayList<>(handshakes.keySet());
+        versions.sort(Collections.reverseOrder()); // newest first
         StringBuilder rv = new StringBuilder();
         for (int v : versions)
         {
@@ -185,7 +231,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         supportedVersions = rv.toString();
 
         addBean(scheduler);
-        addBean(bufferPool);
         addBean(sessionTracker);
         addBean(extensionFactory);
         listeners.add(this.sessionTracker);

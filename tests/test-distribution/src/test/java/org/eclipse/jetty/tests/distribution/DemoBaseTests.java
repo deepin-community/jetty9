@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -171,10 +171,12 @@ public class DemoBaseTests extends AbstractDistributionTest
         {
             assertTrue(run.awaitConsoleLogsFor("Started @", 10, TimeUnit.SECONDS));
 
-            startHttpClient();
+            startHttpClient(true);
             ContentResponse response = client.GET("http://localhost:" + httpPort + "/proxy/current/");
             assertEquals(HttpStatus.OK_200, response.getStatus());
-            assertThat("Expecting APIdoc contents", response.getContentAsString(), containsString("All&nbsp;Classes"));
+            String body = response.getContentAsString();
+            assertThat("Expecting APIdoc contents", body, containsString("All&nbsp;Classes"));
+            assertThat("Expecting APIdoc contents", body, containsString("<title>Overview (Jetty :: Project 9."));
         }
     }
 

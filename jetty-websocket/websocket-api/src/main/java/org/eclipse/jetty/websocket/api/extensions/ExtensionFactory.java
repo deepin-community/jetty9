@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,7 +37,12 @@ public abstract class ExtensionFactory implements Iterable<Class<? extends Exten
     public ExtensionFactory()
     {
         availableExtensions = new HashMap<>();
-        Iterator<Extension> iterator = ServiceLoader.load(Extension.class).iterator();
+        final ServiceLoader sl = ServiceLoader.load(Extension.class);
+        if (sl == null)
+        {
+            return;
+        }
+        final Iterator<Extension> iterator = sl.iterator();
         while (true)
         {
             try

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,12 @@ import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 public class PathParamServerEndpointConfig extends BasicServerEndpointConfig implements ServerEndpointConfig
 {
     private final Map<String, String> pathParamMap;
+
+    public PathParamServerEndpointConfig(WebSocketContainerScope containerScope, ServerEndpointConfig config, Map<String, String> pathParameters)
+    {
+        super(containerScope, config);
+        pathParamMap = new HashMap<>(pathParameters);
+    }
 
     public PathParamServerEndpointConfig(WebSocketContainerScope containerScope, ServerEndpointConfig config, UriTemplatePathSpec pathSpec, String requestPath)
     {

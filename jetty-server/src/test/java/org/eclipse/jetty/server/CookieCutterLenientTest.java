@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import java.util.stream.Stream;
 import javax.servlet.http.Cookie;
 
+import org.eclipse.jetty.http.CookieCompliance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -162,7 +163,7 @@ public class CookieCutterLenientTest
     @MethodSource("data")
     public void testLenientBehavior(String rawHeader, String expectedName, String expectedValue)
     {
-        CookieCutter cutter = new CookieCutter();
+        CookieCutter cutter = new CookieCutter(CookieCompliance.RFC6265_LEGACY);
         cutter.addCookieField(rawHeader);
         Cookie[] cookies = cutter.getCookies();
         if (expectedName == null)

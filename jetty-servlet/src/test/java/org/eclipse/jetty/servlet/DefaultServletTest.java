@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -52,13 +52,13 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.SameFileAliasChecker;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -66,7 +66,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.resource.PathResource;
-import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -974,8 +973,6 @@ public class DefaultServletTest
     public void testWelcomeRedirectDirWithQuestion() throws Exception
     {
         FS.ensureDirExists(docRoot);
-        context.setBaseResource(new PathResource(docRoot));
-
         Path dir = assumeMkDirSupported(docRoot, "dir?");
 
         Path index = dir.resolve("index.html");
@@ -1008,8 +1005,6 @@ public class DefaultServletTest
     public void testWelcomeRedirectDirWithSemicolon() throws Exception
     {
         FS.ensureDirExists(docRoot);
-        context.setBaseResource(new PathResource(docRoot));
-
         Path dir = assumeMkDirSupported(docRoot, "dir;");
 
         Path index = dir.resolve("index.html");
@@ -1143,7 +1138,7 @@ public class DefaultServletTest
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
-            context.addAliasCheck(new AllowSymLinkAliasChecker());
+            context.addAliasCheck(new AllowedResourceAliasChecker(context));
 
             rawResponse = connector.getResponse("GET /context/dir/link.txt HTTP/1.0\r\n\r\n");
             response = HttpTester.parseResponse(rawResponse);
@@ -1232,8 +1227,6 @@ public class DefaultServletTest
     public void testDirectFromResourceHttpContent() throws Exception
     {
         FS.ensureDirExists(docRoot);
-        context.setBaseResource(Resource.newResource(docRoot));
-
         Path index = docRoot.resolve("index.html");
         createFile(index, "<h1>Hello World</h1>");
 
@@ -1939,6 +1932,16 @@ public class DefaultServletTest
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "gzip"));
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
+
+        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nAccept-Encoding:gzip, compress\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
+        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "br"));
+        body = response.getContent();
+        assertThat(body, containsString("fake brotli"));
     }
 
     @Test

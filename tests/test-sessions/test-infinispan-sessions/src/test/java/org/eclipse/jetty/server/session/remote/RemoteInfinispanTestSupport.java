@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,8 +24,8 @@ import java.lang.annotation.ElementType;
 import java.util.Properties;
 
 import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
-import org.eclipse.jetty.session.infinispan.SessionDataMarshaller;
 import org.eclipse.jetty.util.IO;
 import org.hibernate.search.cfg.Environment;
 import org.hibernate.search.cfg.SearchMapping;
@@ -34,14 +34,14 @@ import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.configuration.Configuration;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
-import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
-import org.infinispan.protostream.FileDescriptorSource;
-import org.infinispan.protostream.SerializationContext;
+import org.infinispan.commons.configuration.XMLStringConfiguration;
+import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -67,25 +67,26 @@ public class RemoteInfinispanTestSupport
         {
             //Testcontainers.exposeHostPorts(11222);
             long start = System.currentTimeMillis();
-            String infinispanVersion = System.getProperty("infinispan.docker.image.version", "9.4.8.Final");
+            String infinispanVersion = System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
             infinispan =
-                new GenericContainer(System.getProperty("infinispan.docker.image.name", "jboss/infinispan-server") +
-                    ":" + infinispanVersion)
-                    .withEnv("APP_USER", "theuser")
-                    .withEnv("APP_PASS", "foobar")
-                    .withEnv("MGMT_USER", "admin")
-                    .withEnv("MGMT_PASS", "admin")
-                    .waitingFor(new LogMessageWaitStrategy()
-                        .withRegEx(".*Infinispan Server.*started in.*\\s"))
-                    .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
-                    .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG));
+                new GenericContainer(System.getProperty("infinispan.docker.image.name", "infinispan/server") +
+                        ":" + infinispanVersion)
+                        .withEnv("USER", "theuser")
+                        .withEnv("PASS", "foobar")
+                        .withEnv("MGMT_USER", "admin")
+                        .withEnv("MGMT_PASS", "admin")
+                        .withEnv("CONFIG_PATH", "/user-config/config.yaml")
+                        .waitingFor(Wait.forLogMessage(".*Infinispan Server.*started in.*\\s", 1))
+                        .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
+                        .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
+                        .withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY);
             infinispan.start();
             String host = infinispan.getContainerIpAddress();
             System.setProperty("hotrod.host", host);
             int port = infinispan.getMappedPort(11222);
 
             LOG.info("Infinispan container started for {}:{} - {}ms", host, port,
-                     System.currentTimeMillis() - start);
+                    System.currentTimeMillis() - start);
             SearchMapping mapping = new SearchMapping();
             mapping.entity(SessionData.class).indexed().providedId()
                 .property("expiry", ElementType.METHOD).field();
@@ -103,23 +104,16 @@ public class RemoteInfinispanTestSupport
             if (infinispanVersion.startsWith("1"))
             {
                 configurationBuilder.security().authentication()
-                    .realm("default")
-                    .serverName("infinispan")
                     .saslMechanism("DIGEST-MD5")
                     .username("theuser").password("foobar");
             }
 
+            configurationBuilder.addContextInitializer(new InfinispanSerializationContextInitializer());
             Configuration configuration = configurationBuilder.build();
 
             _manager = new RemoteCacheManager(configuration);
 
-            FileDescriptorSource fds = new FileDescriptorSource();
-            fds.addProtoFiles("/session.proto");
-
-            SerializationContext serCtx = ProtoStreamMarshaller.getSerializationContext(_manager);
-            serCtx.registerProtoFiles(fds);
-            serCtx.registerMarshaller(new SessionDataMarshaller());
-
+            //upload the session.proto file to the remote cache
             ByteArrayOutputStream baos;
             try (InputStream is = RemoteInfinispanSessionDataStoreTest.class.getClassLoader().getResourceAsStream("session.proto"))
             {
@@ -160,7 +154,15 @@ public class RemoteInfinispanTestSupport
 
     public void setup() throws Exception
     {
-        _cache = _manager.administration().getOrCreateCache(_name, (String)null);
+        String xml = String.format("<infinispan>"  + 
+            "<cache-container>" + "<distributed-cache name=\"%s\" mode=\"SYNC\">" +
+            "<encoding media-type=\"application/x-protostream\"/>" +
+            "</distributed-cache>" +
+            "</cache-container>" +
+            "</infinispan>", _name);
+
+        XMLStringConfiguration xmlConfig = new XMLStringConfiguration(xml);
+        _cache = _manager.administration().getOrCreateCache(_name, xmlConfig);
     }
 
     public void teardown() throws Exception
@@ -171,12 +173,13 @@ public class RemoteInfinispanTestSupport
     public void createSession(SessionData data)
         throws Exception
     {
+        ((InfinispanSessionData)data).serializeAttributes();
         _cache.put(data.getContextPath() + "_" + data.getVhost() + "_" + data.getId(), data);
     }
 
     public void createUnreadableSession(SessionData data)
     {
-
+        //Unused by test
     }
 
     public boolean checkSessionExists(SessionData data)
@@ -193,7 +196,8 @@ public class RemoteInfinispanTestSupport
             return false;
 
         InfinispanSessionData saved = (InfinispanSessionData)obj;
-        saved.deserializeAttributes();
+        if (saved.getSerializedAttributes() != null)
+            saved.deserializeAttributes();
 
         assertEquals(data.getId(), saved.getId());
         assertEquals(data.getContextPath(), saved.getContextPath());

@@ -2,14 +2,14 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>infinispan-parent</artifactId>
-    <version>9.4.44.v20210927</version>
+    <version>9.4.53.v20231009</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>infinispan-remote-query</artifactId>
   <name>Jetty :: Infinispan Session Manager Remote</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.infinispan.remote.query</bundle-symbolic-name>
-    <infinispan.docker.image.version>9.4.8.Final</infinispan.docker.image.version>
+    <infinispan.docker.image.version>11.0.9.Final</infinispan.docker.image.version>
   </properties>
   <build>
     <plugins>
@@ -99,17 +99,42 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-query</artifactId>
-      <version>${infinispan.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.jboss.logging</groupId>
+          <artifactId>jboss-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-client-hotrod</artifactId>
-      <version>${infinispan.version}</version>
+      <exclusions>
+        <!-- this is depending on an old log4j version which have this issue https://issues.apache.org/jira/browse/LOG4J2-3241 -->
+        <exclusion>
+          <groupId>org.apache.logging.log4j</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.jboss.logging</groupId>
+          <artifactId>jboss-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-remote-query-client</artifactId>
-      <version>${infinispan.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.jboss.logging</groupId>
+          <artifactId>jboss-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>${gson.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

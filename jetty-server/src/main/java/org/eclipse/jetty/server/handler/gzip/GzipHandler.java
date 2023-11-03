@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -628,7 +628,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
 
         // Handle request inflation
-        if (_inflateBufferSize > 0)
+        if (_inflateBufferSize > 0 && !baseRequest.isHandled())
         {
             boolean inflate = false;
             for (ListIterator<HttpField> i = baseRequest.getHttpFields().listIterator(); i.hasNext(); )
@@ -671,6 +671,15 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
                     return new HttpField("X-Content-Length", length);
                 });
             }
+        }
+
+        // From here on out, the response output gzip determination is made
+
+        // Don't attempt to modify the response output if it's already committed.
+        if (response.isCommitted())
+        {
+            _handler.handle(target, baseRequest, request, response);
+            return;
         }
 
         // Are we already being gzipped?
@@ -727,7 +736,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         String mimeType = context == null ? MimeTypes.getDefaultMimeByExtension(path) : context.getMimeType(path);
         if (mimeType != null)
         {
-            mimeType = MimeTypes.getContentTypeWithoutCharset(mimeType);
+            mimeType = HttpFields.valueParameters(mimeType, null);
             if (!isMimeTypeGzipable(mimeType))
             {
                 LOG.debug("{} excluded by path suffix mime type {}", this, request);

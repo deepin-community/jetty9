@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,6 @@ package org.eclipse.jetty.http2.frames;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -50,15 +49,15 @@ public class PushPromiseGenerateParseTest
         PushPromiseGenerator generator = new PushPromiseGenerator(new HeaderGenerator(), new HpackEncoder());
 
         final List<PushPromiseFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(byteBufferPool, 4096);
+        parser.init(new Parser.Listener.Adapter()
         {
             @Override
             public void onPushPromise(PushPromiseFrame frame)
             {
                 frames.add(frame);
             }
-        }, 4096, 8192);
-        parser.init(UnaryOperator.identity());
+        });
 
         int streamId = 13;
         int promisedStreamId = 17;
@@ -103,15 +102,15 @@ public class PushPromiseGenerateParseTest
         PushPromiseGenerator generator = new PushPromiseGenerator(new HeaderGenerator(), new HpackEncoder());
 
         final List<PushPromiseFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(byteBufferPool, 4096);
+        parser.init(new Parser.Listener.Adapter()
         {
             @Override
             public void onPushPromise(PushPromiseFrame frame)
             {
                 frames.add(frame);
             }
-        }, 4096, 8192);
-        parser.init(UnaryOperator.identity());
+        });
 
         int streamId = 13;
         int promisedStreamId = 17;

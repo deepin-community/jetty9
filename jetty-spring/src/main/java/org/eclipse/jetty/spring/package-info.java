@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,7 +17,8 @@
 //
 
 /**
- * Jetty Spring : Spring IoC Configuration for Jetty
+ * Jetty Spring : (Deprecated) Spring IoC Configuration for Jetty
+ * @deprecated
  */
 package org.eclipse.jetty.spring;
 

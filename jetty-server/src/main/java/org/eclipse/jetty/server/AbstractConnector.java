@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -161,6 +161,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private long _idleTimeout = 30000;
     private String _defaultProtocol;
     private ConnectionFactory _defaultConnectionFactory;
+    /* The name used to link up virtual host configuration to named connectors */
     private String _name;
     private int _acceptorPriorityDelta = -2;
     private boolean _accepting = true;
@@ -318,6 +319,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         }
 
         _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _acceptors.length);
+
         super.doStart();
 
         _stopping = new CountDownLatch(_acceptors.length);

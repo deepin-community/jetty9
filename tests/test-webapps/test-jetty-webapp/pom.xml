@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>9.4.44.v20210927</version>
+    <version>9.4.53.v20231009</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -13,6 +13,8 @@
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.tests.webapp</bundle-symbolic-name>
+    <!-- must deploy: required for jetty-distribution -->
+    <maven.deploy.skip>false</maven.deploy.skip>
   </properties>
   <build>
     <plugins>
@@ -123,14 +125,6 @@
               <config>src/main/config/demo-base/etc/realm.properties</config>
             </loginService>
           </loginServices>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- must deploy: required for jetty-distribution -->
-          <skip>false</skip>
         </configuration>
       </plugin>
     </plugins>

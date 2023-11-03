@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -114,6 +114,11 @@ public interface Trie<V>
      */
     V getBest(byte[] b, int offset, int len);
 
+    default V getBest(byte[] b)
+    {
+        return getBest(b, 0, b.length);
+    }
+
     /**
      * Get the best match from key in a byte buffer.
      * The key is assumed to by ISO_8859_1 characters.
@@ -124,6 +129,11 @@ public interface Trie<V>
      * @return The value or null if not found
      */
     V getBest(ByteBuffer b, int offset, int len);
+
+    default V getBest(ByteBuffer b)
+    {
+        return getBest(b, 0, b.remaining());
+    }
 
     Set<String> keySet();
 

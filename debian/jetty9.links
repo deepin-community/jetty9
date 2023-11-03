@@ -55,7 +55,7 @@ usr/share/java/asm.jar                          usr/share/jetty9/lib/annotations
 usr/share/java/asm-analysis.jar                 usr/share/jetty9/lib/annotations/asm-analysis.jar
 usr/share/java/asm-commons.jar                  usr/share/jetty9/lib/annotations/asm-commons.jar
 usr/share/java/asm-tree.jar                     usr/share/jetty9/lib/annotations/asm-tree.jar
-usr/share/java/ecj.jar                          usr/share/jetty9/lib/apache-jsp/jdt-core.jar
+usr/share/java/eclipse-jdt-core.jar             usr/share/jetty9/lib/apache-jsp/jdt-core.jar
 usr/share/java/tomcat9-api.jar                  usr/share/jetty9/lib/apache-jsp/tomcat-api.jar
 usr/share/java/tomcat9-el-api.jar               usr/share/jetty9/lib/apache-jsp/tomcat-el-api.jar
 usr/share/java/tomcat9-jasper.jar               usr/share/jetty9/lib/apache-jsp/tomcat-jasper.jar

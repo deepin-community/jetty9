@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -195,7 +195,7 @@ public class ConnectHandler extends HandlerWrapper
     {
         if (HttpMethod.CONNECT.is(request.getMethod()))
         {
-            String serverAddress = request.getRequestURI();
+            String serverAddress = baseRequest.getHttpURI().getAuthority();
             if (LOG.isDebugEnabled())
                 LOG.debug("CONNECT request for {}", serverAddress);
 

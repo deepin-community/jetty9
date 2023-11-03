@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,6 +35,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletInputStream;
@@ -60,8 +61,12 @@ import org.eclipse.jetty.util.log.Logger;
 public class MultiPartFormInputStream
 {
     private static final Logger LOG = Log.getLogger(MultiPartFormInputStream.class);
+    private static final int DEFAULT_MAX_FORM_KEYS = 1000;
     private static final MultiMap<Part> EMPTY_MAP = new MultiMap<>(Collections.emptyMap());
+    private final EnumSet<NonCompliance> _nonComplianceWarnings = EnumSet.noneOf(NonCompliance.class);
     private final MultiMap<Part> _parts;
+    private final int _maxParts;
+    private int _numParts = 0;
     private InputStream _in;
     private MultipartConfigElement _config;
     private String _contentType;
@@ -71,6 +76,31 @@ public class MultiPartFormInputStream
     private boolean _writeFilesWithFilenames;
     private boolean _parsed;
     private int _bufferSize = 16 * 1024;
+
+    public enum NonCompliance
+    {
+        TRANSFER_ENCODING("https://tools.ietf.org/html/rfc7578#section-4.7");
+
+        final String _rfcRef;
+
+        NonCompliance(String rfcRef)
+        {
+            _rfcRef = rfcRef;
+        }
+
+        public String getURL()
+        {
+            return _rfcRef;
+        }
+    }
+
+    /**
+     * @return an EnumSet of non compliances with the RFC that were accepted by this parser
+     */
+    public EnumSet<NonCompliance> getNonComplianceWarnings()
+    {
+        return _nonComplianceWarnings;
+    }
 
     public class MultiPart implements Part
     {
@@ -324,17 +354,29 @@ public class MultiPartFormInputStream
      */
     public MultiPartFormInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir)
     {
+        this(in, contentType, config, contextTmpDir, DEFAULT_MAX_FORM_KEYS);
+    }
+
+    /**
+     * @param in Request input stream
+     * @param contentType Content-Type header
+     * @param config MultipartConfigElement
+     * @param contextTmpDir javax.servlet.context.tempdir
+     * @param maxParts the maximum number of parts that can be parsed from the multipart content (0 for no parts allowed, -1 for unlimited parts).
+     */
+    public MultiPartFormInputStream(InputStream in, String contentType, MultipartConfigElement config, File contextTmpDir, int maxParts)
+    {
         _contentType = contentType;
         _config = config;
         _contextTmpDir = contextTmpDir;
+        _maxParts = maxParts;
         if (_contextTmpDir == null)
             _contextTmpDir = new File(System.getProperty("java.io.tmpdir"));
 
         if (_config == null)
             _config = new MultipartConfigElement(_contextTmpDir.getAbsolutePath());
 
-        MultiMap parts = new MultiMap();
-
+        MultiMap<Part> parts = new MultiMap<>();
         if (in instanceof ServletInputStream)
         {
             if (((ServletInputStream)in).isFinished())
@@ -610,7 +652,11 @@ public class MultiPartFormInputStream
 
             // Transfer encoding is not longer considers as it is deprecated as per
             // https://tools.ietf.org/html/rfc7578#section-4.7
-
+            if (key.equalsIgnoreCase("content-transfer-encoding"))
+            {
+                if (!"8bit".equalsIgnoreCase(value) && !"binary".equalsIgnoreCase(value))
+                    _nonComplianceWarnings.add(NonCompliance.TRANSFER_ENCODING);
+            }
         }
 
         @Override
@@ -721,6 +767,9 @@ public class MultiPartFormInputStream
         public void startPart()
         {
             reset();
+            _numParts++;
+            if (_maxParts >= 0 && _numParts > _maxParts)
+                throw new IllegalStateException(String.format("Form with too many parts [%d > %d]", _numParts, _maxParts));
         }
 
         @Override

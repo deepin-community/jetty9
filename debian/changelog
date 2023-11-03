@@ -1,3 +1,107 @@
+jetty9 (9.4.53-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Emmanuel Bourg <ebourg@apache.org>  Mon, 09 Oct 2023 23:07:28 +0200
+
+jetty9 (9.4.52-1) unstable; urgency=medium
+
+  * Team upload.
+  * New upstream version 9.4.52.
+  * Refresh the patches.
+
+ -- Markus Koschany <apo@debian.org>  Sun, 24 Sep 2023 01:40:05 +0200
+
+jetty9 (9.4.51-2) experimental; urgency=medium
+
+  * Team upload.
+  * Revert switch to libtomcat10-java. (Closes: #1036798)
+
+ -- Markus Koschany <apo@debian.org>  Sat, 27 May 2023 16:47:13 +0200
+
+jetty9 (9.4.50-4) unstable; urgency=medium
+
+  * Team upload.
+  * Revert the switch to libtomcat10-java. For now Jetty 9 only works correctly
+    with libtomcat9-java. (Closes: #1036798)
+
+ -- Markus Koschany <apo@debian.org>  Sat, 27 May 2023 16:28:19 +0200
+
+jetty9 (9.4.51-1) experimental; urgency=medium
+
+  * Team upload.
+  * New upstream release.
+  * Replace dependency on lsb-base with sysvinit-utils.
+    - Fix: lintian error depends-on-obsolete-package.
+  * Add a systemd timer for debian/jetty9.service.
+    - Fix: lintian warning missing-systemd-timer-for-cron-script.
+  * Fix lintian warning skip-systemd-native-flag-missing-pre-depends.
+  * Fix lintian warning mismatched-override.
+
+ -- sun min <sunmin89@outlook.com>  Wed, 29 Mar 2023 10:10:33 +0800
+
+jetty9 (9.4.50-3) unstable; urgency=medium
+
+  * Team upload.
+  * Depend on libtomcat10-java instead of libtomcat9-java.
+  * Add tomcat10-migration.patch.
+  * Ignore jetty-jaspi module because it does not work with Tomcat 10 yet.
+
+ -- Markus Koschany <apo@debian.org>  Sun, 19 Feb 2023 13:41:00 +0100
+
+jetty9 (9.4.50-2) unstable; urgency=medium
+
+  * Depend on libeclipse-jdt-core-java instead of libecj-java
+  * Standards-Version updated to 4.6.2
+
+ -- Emmanuel Bourg <ebourg@apache.org>  Fri, 06 Jan 2023 12:08:38 +0100
+
+jetty9 (9.4.50-1) unstable; urgency=medium
+
+  * New upstream release
+    - Refreshed the patches
+
+ -- Emmanuel Bourg <ebourg@apache.org>  Sun, 27 Nov 2022 22:47:21 +0100
+
+jetty9 (9.4.49-1) unstable; urgency=medium
+
+  * Team upload.
+  * New upstream version 9.4.49.
+
+ -- Markus Koschany <apo@debian.org>  Thu, 22 Sep 2022 23:41:17 +0200
+
+jetty9 (9.4.48-1) unstable; urgency=high
+
+  * Team upload.
+  * New upstream version 9.4.48.
+    - Fix CVE-2022-2048 and CVE-2022-2047.
+
+ -- Markus Koschany <apo@debian.org>  Mon, 18 Jul 2022 13:26:56 +0200
+
+jetty9 (9.4.46-1) unstable; urgency=medium
+
+  * New upstream release
+    - Refreshed the patches
+
+ -- Emmanuel Bourg <ebourg@apache.org>  Mon, 02 May 2022 18:42:20 +0200
+
+jetty9 (9.4.45-1) unstable; urgency=medium
+
+  * Team upload.
+  * New upstream version 9.4.45.
+  * Remove haproxy binary file from the sources.
+
+ -- Markus Koschany <apo@debian.org>  Fri, 11 Feb 2022 11:13:49 +0100
+
+jetty9 (9.4.44-4) unstable; urgency=medium
+
+  * Team upload.
+  * Add servlet-api.patch and correct the API version in jetty-home/pom.xml.
+    This used to work because libservlet3.1-java was pulled in as a transitive
+    dependency. (Closes: #1002274)
+
+ -- Markus Koschany <apo@debian.org>  Sat, 25 Dec 2021 23:37:56 +0100
+
 jetty9 (9.4.44-3) unstable; urgency=medium
 
   * Team upload.

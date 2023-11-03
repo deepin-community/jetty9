@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -108,7 +108,7 @@ public class HttpURI
          */
         SEPARATOR("Ambiguous path separator"),
         /**
-         * Ambiguous path parameters within a URI segment e.g. {@code /foo/..;/bar}
+         * Ambiguous path parameters within a URI segment e.g. {@code /foo/..;/bar} or {@code /foo/%2e%2e;param/bar}
          */
         PARAM("Ambiguous path parameters"),
         /**
@@ -308,7 +308,7 @@ public class HttpURI
         _uri = uri;
 
         if (HttpMethod.CONNECT.is(method))
-            _path = uri;
+            parse(State.HOST, uri, 0, uri.length());
         else
             parse(uri.startsWith("/") ? State.PATH : State.START, uri, 0, uri.length());
     }
@@ -782,15 +782,14 @@ public class HttpURI
 
         // Look for segment in the ambiguous segment index.
         Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
-        if (ambiguous == Boolean.TRUE)
+        if (ambiguous != null)
         {
-            // The segment is always ambiguous.
-            _violations.add(Violation.SEGMENT);
-        }
-        else if (param && ambiguous == Boolean.FALSE)
-        {
-            // The segment is ambiguous only when followed by a parameter.
-            _violations.add(Violation.PARAM);
+            // Is the segment intrinsically ambiguous
+            if (Boolean.TRUE.equals(ambiguous))
+                _violations.add(Violation.SEGMENT);
+            // Is the segment ambiguous with a parameter?
+            if (param)
+                _violations.add(Violation.PARAM);
         }
     }
 
@@ -1033,9 +1032,20 @@ public class HttpURI
      */
     public void setAuthority(String host, int port)
     {
+        if (host != null && !isPathValidForAuthority(_path))
+            throw new IllegalArgumentException("Relative path with authority");
         _host = host;
         _port = port;
         _uri = null;
+    }
+
+    private boolean isPathValidForAuthority(String path)
+    {
+        if (path == null)
+            return true;
+        if (path.isEmpty() || "*".equals(path))
+            return true;
+        return path.startsWith("/");
     }
 
     /**
@@ -1043,6 +1053,8 @@ public class HttpURI
      */
     public void setPath(String path)
     {
+        if (hasAuthority() && !isPathValidForAuthority(path))
+            throw new IllegalArgumentException("Relative path with authority");
         _uri = null;
         _path = null;
         if (path != null)
@@ -1051,6 +1063,8 @@ public class HttpURI
 
     public void setPathQuery(String pathQuery)
     {
+        if (hasAuthority() && !isPathValidForAuthority(pathQuery))
+            throw new IllegalArgumentException("Relative path with authority");
         _uri = null;
         _path = null;
         _decodedPath = null;
@@ -1062,6 +1076,11 @@ public class HttpURI
          */
         if (pathQuery != null)
             parse(State.PATH, pathQuery, 0, pathQuery.length());
+    }
+
+    private boolean hasAuthority()
+    {
+        return _host != null;
     }
 
     public void setQuery(String query)

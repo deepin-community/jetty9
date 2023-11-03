@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,7 +21,8 @@ package org.eclipse.jetty.http2.frames;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.UnaryOperator;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.IntStream;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -38,6 +39,8 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -51,7 +54,8 @@ public class ContinuationParseTest
         HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
 
         final List<HeadersFrame> frames = new ArrayList<>();
-        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        Parser parser = new Parser(byteBufferPool, 4096);
+        parser.init(new Parser.Listener.Adapter()
         {
             @Override
             public void onHeaders(HeadersFrame frame)
@@ -64,8 +68,7 @@ public class ContinuationParseTest
             {
                 frames.add(new HeadersFrame(null, null, false));
             }
-        }, 4096, 8192);
-        parser.init(UnaryOperator.identity());
+        });
 
         // Iterate a few times to be sure the parser is properly reset.
         for (int i = 0; i < 2; ++i)
@@ -159,5 +162,55 @@ public class ContinuationParseTest
             PriorityFrame priority = frame.getPriority();
             assertNull(priority);
         }
+    }
+
+    @Test
+    public void testLargeHeadersBlock() throws Exception
+    {
+        // Use a ByteBufferPool with a small factor, so that the accumulation buffer is not too large.
+        ByteBufferPool byteBufferPool = new MappedByteBufferPool(128);
+        // A small max headers size, used for both accumulation and decoding.
+        int maxHeadersSize = 512;
+        Parser parser = new Parser(byteBufferPool, maxHeadersSize);
+        // Specify headers block size to generate CONTINUATION frames.
+        int maxHeadersBlockFragment = 128;
+        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder(), maxHeadersBlockFragment);
+
+        int streamId = 13;
+        HttpFields fields = new HttpFields();
+        fields.put("Accept", "text/html");
+        // Large header that generates a large headers block.
+        StringBuilder large = new StringBuilder();
+        IntStream.range(0, 256).forEach(i -> large.append("Jetty"));
+        fields.put("User-Agent", large.toString());
+
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields, -1);
+
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generateHeaders(lease, streamId, metaData, null, true);
+        List<ByteBuffer> byteBuffers = lease.getByteBuffers();
+        assertThat(byteBuffers.stream().mapToInt(ByteBuffer::remaining).sum(), greaterThan(maxHeadersSize));
+
+        AtomicBoolean failed = new AtomicBoolean();
+        parser.init(new Parser.Listener.Adapter()
+        {
+            @Override
+            public void onConnectionFailure(int error, String reason)
+            {
+                failed.set(true);
+            }
+        });
+        // Set a large max headers size for decoding, to ensure
+        // the failure is due to accumulation, not decoding.
+        parser.getHpackDecoder().setMaxHeaderListSize(10 * maxHeadersSize);
+
+        for (ByteBuffer byteBuffer : byteBuffers)
+        {
+            parser.parse(byteBuffer);
+            if (failed.get())
+                break;
+        }
+
+        assertTrue(failed.get());
     }
 }

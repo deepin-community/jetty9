@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,9 @@
 package org.eclipse.jetty.util.compression;
 
 import java.util.zip.Inflater;
+
+import org.eclipse.jetty.util.component.Container;
+import org.eclipse.jetty.util.thread.ThreadPool;
 
 public class InflaterPool extends CompressionPool<Inflater>
 {
@@ -56,5 +59,21 @@ public class InflaterPool extends CompressionPool<Inflater>
     protected void reset(Inflater inflater)
     {
         inflater.reset();
+    }
+
+    public static InflaterPool ensurePool(Container container)
+    {
+        InflaterPool pool = container.getBean(InflaterPool.class);
+        if (pool != null)
+            return pool;
+
+        int capacity = CompressionPool.INFINITE_CAPACITY;
+        ThreadPool.SizedThreadPool threadPool = container.getBean(ThreadPool.SizedThreadPool.class);
+        if (threadPool != null)
+            capacity = threadPool.getMaxThreads();
+
+        pool = new InflaterPool(capacity, true);
+        container.addBean(pool, true);
+        return pool;
     }
 }

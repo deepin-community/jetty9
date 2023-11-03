@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -76,8 +76,15 @@ public class HeadersBodyParser extends BodyParser
         }
         else
         {
-            headerBlockFragments.setStreamId(getStreamId());
-            headerBlockFragments.setEndStream(isEndStream());
+            if (headerBlockFragments.getStreamId() != 0)
+            {
+                connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_headers_frame");
+            }
+            else
+            {
+                headerBlockFragments.setStreamId(getStreamId());
+                headerBlockFragments.setEndStream(isEndStream());
+            }
         }
     }
 
@@ -173,8 +180,24 @@ public class HeadersBodyParser extends BodyParser
                 }
                 case HEADERS:
                 {
+                    if (!hasFlag(Flags.END_HEADERS))
+                    {
+                        headerBlockFragments.setStreamId(getStreamId());
+                        headerBlockFragments.setEndStream(isEndStream());
+                        if (hasFlag(Flags.PRIORITY))
+                            headerBlockFragments.setPriorityFrame(new PriorityFrame(getStreamId(), parentStreamId, weight, exclusive));
+                    }
+                    state = State.HEADER_BLOCK;
+                    break;
+                }
+                case HEADER_BLOCK:
+                {
                     if (hasFlag(Flags.END_HEADERS))
                     {
+                        int maxLength = headerBlockParser.getMaxHeaderListSize();
+                        if (maxLength > 0 && length > maxLength)
+                            return connectionFailure(buffer, ErrorCode.REFUSED_STREAM_ERROR.code, "invalid_headers_frame");
+
                         MetaData metaData = headerBlockParser.parse(buffer, length);
                         if (metaData == HeaderBlockParser.SESSION_FAILURE)
                             return false;
@@ -192,7 +215,7 @@ public class HeadersBodyParser extends BodyParser
                             {
                                 HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, null, isEndStream());
                                 if (!rateControlOnEvent(frame))
-                                    connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_headers_frame_rate");
+                                    return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_headers_frame_rate");
                             }
                         }
                     }
@@ -201,16 +224,14 @@ public class HeadersBodyParser extends BodyParser
                         int remaining = buffer.remaining();
                         if (remaining < length)
                         {
-                            headerBlockFragments.storeFragment(buffer, remaining, false);
+                            if (!headerBlockFragments.storeFragment(buffer, remaining, false))
+                                return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_headers_frame");
                             length -= remaining;
                         }
                         else
                         {
-                            headerBlockFragments.setStreamId(getStreamId());
-                            headerBlockFragments.setEndStream(isEndStream());
-                            if (hasFlag(Flags.PRIORITY))
-                                headerBlockFragments.setPriorityFrame(new PriorityFrame(getStreamId(), parentStreamId, weight, exclusive));
-                            headerBlockFragments.storeFragment(buffer, length, false);
+                            if (!headerBlockFragments.storeFragment(buffer, length, false))
+                                return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_headers_frame");
                             state = State.PADDING;
                             loop = paddingLength == 0;
                         }
@@ -254,6 +275,6 @@ public class HeadersBodyParser extends BodyParser
 
     private enum State
     {
-        PREPARE, PADDING_LENGTH, EXCLUSIVE, PARENT_STREAM_ID, PARENT_STREAM_ID_BYTES, WEIGHT, HEADERS, PADDING
+        PREPARE, PADDING_LENGTH, EXCLUSIVE, PARENT_STREAM_ID, PARENT_STREAM_ID_BYTES, WEIGHT, HEADERS, HEADER_BLOCK, PADDING
     }
 }
