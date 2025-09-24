@@ -1,3 +1,43 @@
+jetty9 (9.4.57-1.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * CVE-2025-5115: MadeYouReset HTTP/2 vulnerability (Closes: #1111766)
+
+ -- Adrian Bunk <bunk@debian.org>  Fri, 05 Sep 2025 08:55:56 +0300
+
+jetty9 (9.4.57-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Emmanuel Bourg <ebourg@apache.org>  Mon, 03 Mar 2025 13:04:12 +0100
+
+jetty9 (9.4.56-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Emmanuel Bourg <ebourg@apache.org>  Mon, 07 Oct 2024 17:27:31 +0200
+
+jetty9 (9.4.55-1) unstable; urgency=medium
+
+  * New upstream release
+    - Refreshed the patches
+  * Standards-Version updated to 4.7.0
+
+ -- Emmanuel Bourg <ebourg@apache.org>  Fri, 02 Aug 2024 08:55:22 +0200
+
+jetty9 (9.4.54-1) unstable; urgency=high
+
+  * Team upload.
+  * New upstream version 9.4.54.
+    - Fix CVE-2024-22201:
+      It was discovered that remote attackers may leave many HTTP/2 connections
+      in ESTABLISHED state (not closed), TCP congested and idle. Eventually the
+      server will stop accepting new connections from valid clients which can
+      cause a denial of service. (Closes: #1064923)
+      Thanks to Salvatore Bonaccorso for the report.
+
+ -- Markus Koschany <apo@debian.org>  Sat, 06 Apr 2024 12:54:58 +0200
+
 jetty9 (9.4.53-1) unstable; urgency=medium
 
   * New upstream release

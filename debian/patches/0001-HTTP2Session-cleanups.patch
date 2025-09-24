@@ -1,0 +1,203 @@
+From 27d7770da7963a1d7015aad23b8a31831ed497a2 Mon Sep 17 00:00:00 2001
+From: Simone Bordet <simone.bordet@gmail.com>
+Date: Wed, 13 Aug 2025 17:46:33 +0200
+Subject: HTTP2Session cleanups.
+
+Various cleanups.
+Updated mismatch in parameter configuration between code and XML files.
+
+Signed-off-by: Simone Bordet <simone.bordet@gmail.com>
+---
+ .../org/eclipse/jetty/http2/HTTP2Session.java | 35 +++++++++++++++----
+ .../jetty/http2/parser/BodyParser.java        |  4 +--
+ .../jetty/http2/parser/HeaderParser.java      |  5 +++
+ .../eclipse/jetty/http2/parser/Parser.java    |  5 +++
+ .../http2/parser/WindowUpdateBodyParser.java  |  7 ++--
+ .../src/main/config/etc/jetty-http2.xml       |  2 +-
+ .../src/main/config/etc/jetty-http2c.xml      |  2 +-
+ .../src/main/config/modules/http2.mod         |  2 +-
+ .../src/main/config/modules/http2c.mod        |  2 +-
+ 9 files changed, 48 insertions(+), 16 deletions(-)
+
+diff --git a/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/HTTP2Session.java b/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/HTTP2Session.java
+index cb0bf1ef989..7560708d11b 100644
+--- a/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/HTTP2Session.java
++++ b/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/HTTP2Session.java
+@@ -522,8 +522,17 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
+             }
+             else
+             {
+-                if (!isStreamClosed(streamId))
++                if (isStreamClosed(streamId))
++                {
++                    // SPEC: this case must not be treated as an error.
++                    // However, we want to rate control it.
++                    if (!rateControlOnEvent(frame))
++                        onConnectionFailure(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_window_update_frame_rate");
++                }
++                else
++                {
+                     onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unexpected_window_update_frame");
++                }
+             }
+         }
+         else
+@@ -682,14 +691,26 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
+ 
+     void reset(IStream stream, ResetFrame frame, Callback callback)
+     {
+-        control(stream, Callback.from(() ->
++        if (rateControlOnEvent(frame))
+         {
+-            if (stream != null)
++            control(stream, Callback.from(() ->
+             {
+-                stream.close();
+-                removeStream(stream);
+-            }
+-        }, callback), frame);
++                if (stream != null)
++                {
++                    stream.close();
++                    removeStream(stream);
++                }
++            }, callback), frame);
++        }
++        else
++        {
++            onConnectionFailure(ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_rst_stream_frame_rate");
++        }
++    }
++
++    private boolean rateControlOnEvent(Object event)
++    {
++        return getParser().rateControlOnEvent(event);
+     }
+ 
+     /**
+diff --git a/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/parser/BodyParser.java b/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/parser/BodyParser.java
+index 09f515de560..23689ea80b0 100644
+--- a/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/parser/BodyParser.java
++++ b/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/parser/BodyParser.java
+@@ -231,7 +231,7 @@ public abstract class BodyParser
+     protected boolean streamFailure(int streamId, int error, String reason)
+     {
+         notifyStreamFailure(streamId, error, reason);
+-        return false;
++        return true;
+     }
+ 
+     private void notifyStreamFailure(int streamId, int error, String reason)
+@@ -248,6 +248,6 @@ public abstract class BodyParser
+ 
+     protected boolean rateControlOnEvent(Object o)
+     {
+-        return headerParser.getRateControl().onEvent(o);
++        return headerParser.rateControlOnEvent(o);
+     }
+ }
+diff --git a/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/parser/HeaderParser.java b/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/parser/HeaderParser.java
+index 39f7b7f0a38..b06ca13154a 100644
+--- a/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/parser/HeaderParser.java
++++ b/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/parser/HeaderParser.java
+@@ -48,6 +48,11 @@ public class HeaderParser
+         return rateControl;
+     }
+ 
++    boolean rateControlOnEvent(Object o)
++    {
++        return getRateControl().onEvent(o);
++    }
++
+     protected void reset()
+     {
+         state = State.LENGTH;
+diff --git a/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/parser/Parser.java b/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/parser/Parser.java
+index 1d727f7dcdb..609743cc69f 100644
+--- a/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/parser/Parser.java
++++ b/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/parser/Parser.java
+@@ -105,6 +105,11 @@ public class Parser
+         bodyParsers[FrameType.CONTINUATION.getType()] = new ContinuationBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
+     }
+ 
++    public boolean rateControlOnEvent(Object event)
++    {
++        return headerParser.rateControlOnEvent(event);
++    }
++
+     protected Listener getListener()
+     {
+         return listener;
+diff --git a/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/parser/WindowUpdateBodyParser.java b/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/parser/WindowUpdateBodyParser.java
+index 2dd810e3b51..cb370a4f931 100644
+--- a/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/parser/WindowUpdateBodyParser.java
++++ b/jetty-http2/http2-common/src/main/java/org/eclipse/jetty/http2/parser/WindowUpdateBodyParser.java
+@@ -94,15 +94,16 @@ public class WindowUpdateBodyParser extends BodyParser
+     private boolean onWindowUpdate(ByteBuffer buffer, int windowDelta)
+     {
+         int streamId = getStreamId();
++        WindowUpdateFrame frame = new WindowUpdateFrame(streamId, windowDelta);
++        reset();
+         if (windowDelta == 0)
+         {
+             if (streamId == 0)
+                 return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_window_update_frame");
+-            else
++            if (rateControlOnEvent(frame))
+                 return streamFailure(streamId, ErrorCode.PROTOCOL_ERROR.code, "invalid_window_update_frame");
++            return connectionFailure(buffer, ErrorCode.ENHANCE_YOUR_CALM_ERROR.code, "invalid_window_update_frame_rate");
+         }
+-        WindowUpdateFrame frame = new WindowUpdateFrame(streamId, windowDelta);
+-        reset();
+         notifyWindowUpdate(frame);
+         return true;
+     }
+diff --git a/jetty-http2/http2-server/src/main/config/etc/jetty-http2.xml b/jetty-http2/http2-server/src/main/config/etc/jetty-http2.xml
+index 4c02444cba9..4bd4053c2fa 100644
+--- a/jetty-http2/http2-server/src/main/config/etc/jetty-http2.xml
++++ b/jetty-http2/http2-server/src/main/config/etc/jetty-http2.xml
+@@ -12,7 +12,7 @@
+         <Set name="maxSettingsKeys"><Property name="jetty.http2.maxSettingsKeys" default="64"/></Set>
+         <Set name="rateControlFactory">
+           <New class="org.eclipse.jetty.http2.parser.WindowRateControl$Factory">
+-            <Arg type="int"><Property name="jetty.http2.rateControl.maxEventsPerSecond" default="50"/></Arg>
++            <Arg type="int"><Property name="jetty.http2.rateControl.maxEventsPerSecond" default="128"/></Arg>
+           </New>
+         </Set>
+       </New>
+diff --git a/jetty-http2/http2-server/src/main/config/etc/jetty-http2c.xml b/jetty-http2/http2-server/src/main/config/etc/jetty-http2c.xml
+index 7a7fad859c6..4b55671ff97 100644
+--- a/jetty-http2/http2-server/src/main/config/etc/jetty-http2c.xml
++++ b/jetty-http2/http2-server/src/main/config/etc/jetty-http2c.xml
+@@ -12,7 +12,7 @@
+         <Set name="maxSettingsKeys"><Property name="jetty.http2c.maxSettingsKeys" default="64"/></Set>
+         <Set name="rateControlFactory">
+           <New class="org.eclipse.jetty.http2.parser.WindowRateControl$Factory">
+-            <Arg type="int"><Property name="jetty.http2c.rateControl.maxEventsPerSecond" default="50"/></Arg>
++            <Arg type="int"><Property name="jetty.http2c.rateControl.maxEventsPerSecond" default="128"/></Arg>
+           </New>
+         </Set>
+       </New>
+diff --git a/jetty-http2/http2-server/src/main/config/modules/http2.mod b/jetty-http2/http2-server/src/main/config/modules/http2.mod
+index 2a45dd21dfa..0b8e53f13b4 100644
+--- a/jetty-http2/http2-server/src/main/config/modules/http2.mod
++++ b/jetty-http2/http2-server/src/main/config/modules/http2.mod
+@@ -34,4 +34,4 @@ etc/jetty-http2.xml
+ # jetty.http2.maxSettingsKeys=64
+ 
+ ## Max number of bad frames and pings per second
+-# jetty.http2.rateControl.maxEventsPerSecond=50
++# jetty.http2.rateControl.maxEventsPerSecond=128
+diff --git a/jetty-http2/http2-server/src/main/config/modules/http2c.mod b/jetty-http2/http2-server/src/main/config/modules/http2c.mod
+index 46098c48c6b..f6214e3052f 100644
+--- a/jetty-http2/http2-server/src/main/config/modules/http2c.mod
++++ b/jetty-http2/http2-server/src/main/config/modules/http2c.mod
+@@ -32,4 +32,4 @@ etc/jetty-http2c.xml
+ # jetty.http2c.maxSettingsKeys=64
+ 
+ ## Max number of bad frames and pings per second
+-# jetty.http2c.rateControl.maxEventsPerSecond=50
++# jetty.http2c.rateControl.maxEventsPerSecond=128
+-- 
+2.30.2
+

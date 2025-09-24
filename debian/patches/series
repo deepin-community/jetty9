@@ -6,3 +6,4 @@
 08-ignore-jetty-test-policy.patch
 09-tweak-distribution.patch
 servlet-api.patch
+0001-HTTP2Session-cleanups.patch

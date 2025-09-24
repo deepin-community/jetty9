@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.53.v20231009</version>
+    <version>9.4.57.v20241219</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-jaas</artifactId>
@@ -12,7 +12,7 @@
     <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
     <!-- 2.0.0.AM25 is breaking surefire -->
     <apacheds.version>2.0.0.AM26</apacheds.version>
-    <apache.directory.api.version>2.1.4</apache.directory.api.version>
+    <apache.directory.api.version>2.1.5</apache.directory.api.version>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.jaas.*</spotbugs.onlyAnalyze>
   </properties>
   <build>
