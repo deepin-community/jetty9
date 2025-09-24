@@ -10,7 +10,7 @@ Forwarded: not-needed
 
 --- a/pom.xml
 +++ b/pom.xml
-@@ -222,7 +222,6 @@
+@@ -224,7 +224,6 @@
      <module>jetty-alpn</module>
      <module>jetty-home</module>
      <module>jetty-bom</module>

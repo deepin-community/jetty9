@@ -44,7 +44,7 @@ instead of the 'config' descriptor from the (missing) jetty-assembly-descriptors
          </executions>
 --- a/pom.xml
 +++ b/pom.xml
-@@ -1370,9 +1370,9 @@
+@@ -1403,9 +1403,9 @@
                    <goal>single</goal>
                  </goals>
                  <configuration>

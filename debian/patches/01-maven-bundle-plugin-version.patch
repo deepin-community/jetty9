@@ -8,7 +8,7 @@ Subject: maven-bundle-plugin-version
 
 --- a/pom.xml
 +++ b/pom.xml
-@@ -437,6 +437,7 @@
+@@ -465,6 +465,7 @@
        <plugin>
          <groupId>org.apache.felix</groupId>
          <artifactId>maven-bundle-plugin</artifactId>

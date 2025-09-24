@@ -45,7 +45,7 @@ function gitFindRemoteByUrl() {
     return 0
 }
 
-GIT_REMOTE_URL="github.com:eclipse/jetty.project.git"
+GIT_REMOTE_URL="github.com:jetty/jetty.project.git"
 GIT_REMOTE_ID=$(gitFindRemoteByUrl "$GIT_REMOTE_URL")
 GIT_BRANCH_ID=$(git symbolic-ref -q --short HEAD || git describe --tags --exact-match)
 
@@ -91,7 +91,8 @@ DEPLOY_OPTS="-DskipTests -Dtest=None"
 # DEPLOY_OPTS="$DEPLOY_OPTS -DaltDeploymentRepository=intarget::default::file://$ALT_DEPLOY_DIR/"
 
 # Uncomment for Java 1.7
-export MAVEN_OPTS="-Xmx1g -XX:MaxPermSize=128m"
+# export MAVEN_OPTS="-Xmx1g -XX:MaxPermSize=128m"
+export MAVEN_OPTS="-Xmx2g"
 
 echo ""
 echo "-----------------------------------------------"
@@ -130,6 +131,7 @@ reportMavenTestFailures() {
 
 echo ""
 if proceedyn "Are you sure you want to release using above? (y/N)" n; then
+    mvn clean install -pl build-resources
     echo ""
     if proceedyn "Update VERSION.txt for $VER_RELEASE? (Y/n)" y; then
         # Uncomment alternate JVM for jetty 9.2 builds
