@@ -6,3 +6,4 @@
 08-ignore-jetty-test-policy.patch
 09-tweak-distribution.patch
 servlet-api.patch
+CVE-2026-2332.patch

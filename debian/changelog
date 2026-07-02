@@ -1,3 +1,9 @@
+jetty9 (9.4.53-1deepin1) unstable; urgency=medium
+
+  * fix(cve): CVE-2026-2332
+
+ -- deepin-ci-robot <packages@deepin.org>  Thu, 02 Jul 2026 16:06:22 +0800
+
 jetty9 (9.4.53-1) unstable; urgency=medium
 
   * New upstream release
