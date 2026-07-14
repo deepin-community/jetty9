@@ -145,6 +145,18 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     }
 
     @Override
+    public <T> void addMessageHandler(Class<T> clazz, MessageHandler.Partial<T> handler) throws IllegalStateException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T> void addMessageHandler(Class<T> clazz, MessageHandler.Whole<T> handler) throws IllegalStateException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void close(CloseReason closeReason) throws IOException
     {
         close(closeReason.getCloseCode().getCode(), closeReason.getReasonPhrase());

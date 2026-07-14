@@ -75,7 +75,7 @@
           </execution>
           <execution>
             <id>copy</id>
-            <phase>prepare-package</phase>
+            <phase>none</phase>
             <goals>
               <goal>copy</goal>
             </goals>
@@ -147,7 +147,7 @@
 
           <execution>
             <id>unpack-test-webapp-config</id>
-            <phase>prepare-package</phase>
+            <phase>none</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -169,7 +169,7 @@
 
           <execution>
             <id>unpack-test-jaas-config</id>
-            <phase>prepare-package</phase>
+            <phase>none</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -191,7 +191,7 @@
 
           <execution>
             <id>unpack-test-jndi-config</id>
-            <phase>prepare-package</phase>
+            <phase>none</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -213,7 +213,7 @@
 
           <execution>
             <id>unpack-test-spec-config</id>
-            <phase>prepare-package</phase>
+            <phase>none</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
@@ -234,7 +234,7 @@
           </execution>
           <execution>
             <id>unpack-documentation</id>
-            <phase>prepare-package</phase>
+            <phase>none</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
