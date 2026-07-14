@@ -80,9 +80,9 @@
               <goal>single</goal>
             </goals>
             <configuration>
-              <descriptorRefs>
-                <descriptorRef>config</descriptorRef>
-              </descriptorRefs>
+              <descriptors>
+                <descriptor>../../debian/assembly-config.xml</descriptor>
+              </descriptors>
             </configuration>
           </execution>
         </executions>
